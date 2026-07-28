@@ -99,7 +99,12 @@ function copyLibs(src, dest, filterFn) {
 };
 
 function buildLinux(cfg, portable) {
-    const archList = cfg.buildScript.linux.architecture;
+    const hostArch = process.arch === "x64" ? "x64" : process.arch === "arm64" ? "arm64" : process.arch;
+
+    const fullArchList = cfg.buildScript.linux.architecture;
+    const archList = fullArchList.filter((arch) => arch === hostArch);
+    if (archList.length === 0) return console.warn(`Skipping linux build, arch doesn't match`);
+
     const binary = cfg.cli.binaryName;
     const appName = cfg.buildScript.linux.appName;
     const safeAppName = appName.replaceAll(" ", "-");
@@ -126,12 +131,19 @@ function buildLinux(cfg, portable) {
         copyLibs(`./libs`, path.join(`${outDir}/usr/bin/`, "libs"), (f) => f.includes("linux") && (f.includes(arch) || f.includes("no-arch")));
 
         if (process.platform === "linux" && fs.existsSync('/usr/bin/zenity')) {
-            console.log(`Bundling Zenity into AppImage...`);
-            run(`cp "/usr/bin/zenity" "${outDir}/usr/bin/zenity"`);
+            const isHostArm = process.arch === 'arm64' || process.arch === 'aarch64';
+            const isTargetArm = arch === 'arm64' || arch === 'aarch64';
 
-            if (fs.existsSync('/usr/share/zenity')) {
-                fs.mkdirSync(`${outDir}/usr/share/`, { recursive: true });
-                run(`cp -r "/usr/share/zenity" "${outDir}/usr/share/"`);
+            if (isHostArm === isTargetArm) {
+                console.log(`Bundling zenity into AppImage (${arch})...`);
+                run(`cp "/usr/bin/zenity" "${outDir}/usr/bin/zenity"`);
+
+                if (fs.existsSync('/usr/share/zenity')) {
+                    fs.mkdirSync(`${outDir}/usr/share/`, { recursive: true });
+                    run(`cp -r "/usr/share/zenity" "${outDir}/usr/share/"`);
+                };
+            } else {
+                console.warn(`Skipping zenity in bundle, host arch doesn't match target (${arch})`);
             };
         };
 
@@ -188,10 +200,12 @@ Keywords=game;launcher;legacy;community;`;
         if (process.platform === "linux" && process.argv.length > 2) {
             console.log(`Creating AppImage for ${arch}...`);
             const targetArch = arch === 'arm64' ? 'aarch64' : arch;
+            const targetLibDir = arch === 'arm64' ? '/usr/lib/aarch64-linux-gnu' : '/usr/lib/x86_64-linux-gnu';
 
             const hasLinuxDeploy = !!execSync("which linuxdeploy 2>/dev/null || true").toString().trim();
             if (hasLinuxDeploy) {
-                run(`ARCH=${targetArch} LINUXDEPLOY_PLUGINS="gstreamer" linuxdeploy --appdir="${outDir}" --executable="${outDir}/usr/bin/${safeAppName}" --executable="${outDir}/usr/bin/zenity" --output appimage`);
+                const envVars = `ARCH=${targetArch} LD_LIBRARY_PATH="${targetLibDir}:$LD_LIBRARY_PATH" LINUXDEPLOY_PLUGINS="gstreamer"`;
+                run(`${envVars} linuxdeploy --appdir="${outDir}" --executable="${outDir}/usr/bin/${safeAppName}" --output appimage`);
                 run(`mv ./*.AppImage "./dist/${safeAppName}${!!portable ? "-portable" : ""}-linux-${arch}.AppImage" 2>/dev/null || true`);
             } else {
                 run(`ARCH=${targetArch} appimagetool "${outDir}" "./dist/${safeAppName}${!!portable ? "-portable" : ""}-linux-${arch}.AppImage"`);
