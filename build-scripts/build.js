@@ -102,8 +102,13 @@ function buildLinux(cfg, portable) {
     const hostArch = process.arch === "x64" ? "x64" : process.arch === "arm64" ? "arm64" : process.arch;
 
     const fullArchList = cfg.buildScript.linux.architecture;
-    const archList = fullArchList.filter((arch) => arch === hostArch);
-    if (archList.length === 0) return console.warn(`Skipping linux build, arch doesn't match`);
+    let archList = [];
+    if (process.platform === "linux" && process.argv.length > 2) {
+        archList = fullArchList.filter((arch) => arch === hostArch);
+        if (archList.length === 0) return console.warn(`Skipping linux build, arch doesn't match`);
+    } else {
+        archList = fullArchList;
+    };
 
     const binary = cfg.cli.binaryName;
     const appName = cfg.buildScript.linux.appName;
