@@ -1,0 +1,16 @@
+#toast {
+	position: fixed;
+	top: 70px;
+	left: 50%;
+	transform: translateX(-50%);
+
+	font: 12px 'Minecraftia', sans-serif;
+	text-align: center;
+	text-shadow: 2px 2px #000A;
+	transition: opacity .3s linear;
+	opacity: 0;
+}
+
+#toast.show {
+  opacity: 1;
+}

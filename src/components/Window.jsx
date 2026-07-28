@@ -167,7 +167,6 @@ export default function Window({ title, loaded = false, showClose = true, showMi
                         break;
                     case 'quit':
                         if (window.whenQuitting) await window.whenQuitting();
-                        if (window.beforeExitRPC) await window.beforeExitRPC();
                         await Neutralino.app.exit();
                         break;
                     case 'copy':
@@ -330,7 +329,6 @@ export default function Window({ title, loaded = false, showClose = true, showMi
                         {showClose &&
                             <div class="button" id="close-button" onClick={async() => {
                                 if(window.whenQuitting) await window.whenQuitting();
-                                if (window.beforeExitRPC) await window.beforeExitRPC();
                                 await Neutralino.app.exit();
                             }}>
                                 <img class="icon" src={closeIcon} draggable={false} />

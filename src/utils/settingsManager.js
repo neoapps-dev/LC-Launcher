@@ -4,6 +4,15 @@ import { defaultSettings } from "../data/defaultSettings.js";
 let cache = null;
 let dataDirCache = localStorage.getItem("dataDirectory");
 
+const ensureDir = async (path) => {
+    try {
+        const stats = await Neutralino.filesystem.getStats(path);
+        if (stats.type == "FILE") throw new Error();
+    } catch {
+        await Neutralino.filesystem.createDirectory(path);
+    };
+};
+
 const getDataDirectory = async () => {
     if (dataDirCache) return dataDirCache;
 
@@ -53,6 +62,7 @@ async function writeConfig(config) {
     cache = config;
 
     const path = await getConfigPath();
+    await ensureDir(await getDataDirectory());
     await Neutralino.filesystem.writeFile(path, JSON.stringify(config, null, 2));
 };
 

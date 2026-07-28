@@ -3,8 +3,10 @@ import "./EditProfile.css";
 import { useState, useEffect } from "preact/hooks";
 import Neutralino from "@neutralinojs/lib";
 import { useManager } from "../utils/ManagerProvider.jsx";
-import { showToast } from "../components/Toast.jsx";
+import Net from "../lib/net.js";
 
+import { showToast } from "../components/Toast.jsx";
+import { showAlert } from "../components/Alert.jsx";
 import Button from "../components/Button.jsx";
 import Textbox from "../components/Textbox.jsx";
 import Select from "../components/Select.jsx";
@@ -46,7 +48,7 @@ export default function EditProfileMenu({ setMenu, profile, setProfile, reloadDa
     };
 
     const handleDelete = async () => {
-        const confirmDelete = await Neutralino.os.showMessageBox("Delete Profile", `Are you sure you want to delete "${profile.username}" profile?`, "YES_NO", "WARNING");
+        const confirmDelete = await showAlert("Delete Profile", `Are you sure you want to delete "${profile.username}" profile?`, "YES_NO");
         if (confirmDelete !== "YES") return;
 
         setProcessing(true);
@@ -61,6 +63,19 @@ export default function EditProfileMenu({ setMenu, profile, setProfile, reloadDa
         };
     };
 
+    const fetchDataURI = async (imageUrl) => {
+        const skinRes = await fetch(imageUrl);
+        if (!skinRes.ok) throw new Error("Failed to download skin image");
+        const skinBlob = await skinRes.blob();
+
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(skinBlob);
+        });
+    };
+
     const handleCreate = async () => {
         if (!ready) return showToast("You need to enter a valid username");
 
@@ -70,21 +85,21 @@ export default function EditProfileMenu({ setMenu, profile, setProfile, reloadDa
             if (skinMode === "java") {
                 showToast("Fetching Java Edition skin...");
                 try {
-                    const userRes = await fetch(`https://mcprofile.io/api/v1/java/username/${username}`);
-                    if (!userRes.ok) throw new Error("User not found");
-                    const userData = await userRes.json();
-                    
-                    if (userData?.skin) {
-                        const skinRes = await fetch(userData.skin);
-                        const skinBlob = await skinRes.blob();
-                        
-                        skinDataURI = await new Promise((resolve, reject) => {
-                            const reader = new FileReader();
-                            reader.onloadend = () => resolve(reader.result);
-                            reader.onerror = reject;
-                            reader.readAsDataURL(skinBlob);
-                        });
-                    };// otherwise they use steve
+                    const profileRes = await Net.get(`https://api.mojang.com/users/profiles/minecraft/${username}`);
+                    if (!profileRes.ok || !profileRes.data?.id) throw new Error("Java user not found");
+
+                    const uuid = profileRes.data.id;
+
+                    const sessionRes = await Net.get(`https://sessionserver.mojang.com/session/minecraft/profile/${uuid}`);
+                    if (!sessionRes.ok || !sessionRes.data?.properties) throw new Error("Profile texture not found");
+
+                    const texturesProp = sessionRes.data.properties.find(p => p.name === 'textures');
+                    if (!texturesProp?.value) throw new Error("No texture property found");
+
+                    const decoded = JSON.parse(atob(texturesProp.value));
+                    const skinUrl = decoded?.textures?.SKIN?.url;
+
+                    if (skinUrl) skinDataURI = await fetchDataURI(skinUrl);
                 } catch (e) {
                     console.error(e);
                     showToast("Failed to fetch Java Edition skin");
@@ -93,21 +108,17 @@ export default function EditProfileMenu({ setMenu, profile, setProfile, reloadDa
             } else if (skinMode === "bedrock") {
                 showToast("Fetching Bedrock Edition skin...");
                 try {
-                    const userRes = await fetch(`https://mcprofile.io/api/v1/bedrock/gamertag/${username}`);
-                    if (!userRes.ok) throw new Error("User not found");
-                    const userData = await userRes.json();
-                    
-                    if (userData?.skin) {
-                        const skinRes = await fetch(userData.skin);
-                        const skinBlob = await skinRes.blob();
-                        
-                        skinDataURI = await new Promise((resolve, reject) => {
-                            const reader = new FileReader();
-                            reader.onloadend = () => resolve(reader.result);
-                            reader.onerror = reject;
-                            reader.readAsDataURL(skinBlob);
-                        });
-                    };// otherwise they use steve
+                    const geyserRes = await Net.get(`https://api.geysermc.org/v2/xbox/xuid/${username}`);
+                    console.log(geyserRes)
+                    if (!geyserRes.ok || !geyserRes.data?.xuid) throw new Error("Bedrock user not found");
+
+                    const xuid = geyserRes.data.xuid;
+                    const skinRes = await Net.get(`https://api.geysermc.org/v2/skin/${xuid}`);
+                    console.log(skinRes)
+                    if (!skinRes.ok || !skinRes.data?.is_steve) {
+                        const skinUrl = `https://api.geysermc.org/v2/skin/${xuid}/texture`;
+                        skinDataURI = await fetchDataURI(skinUrl);
+                    };
                 } catch (e) {
                     console.error(e);
                     showToast("Failed to fetch Bedrock Edition skin");
@@ -217,36 +228,33 @@ export default function EditProfileMenu({ setMenu, profile, setProfile, reloadDa
                                         label="Enter your skin's path"
                                         minlength={3}
                                         maxlength={150}
+                                        isFilePicker={true}
+                                        onPick={async () => {
+                                            const res = await Neutralino.os.showOpenDialog(
+                                                "Select a skin",
+                                                {
+                                                    multiSelections: false,
+                                                    filters: [
+                                                        {name: 'Images', extensions: ['png']},
+                                                    ]
+                                                }
+                                            );
+                                            if (!res || res.length === 0) return;
+                                            const src = res[0].trim();
+                                            if (!src.endsWith(".png"))
+                                                return showToast("Please select a valid skin file"); // extra check as sometimes a file explorer bypasses filter
+
+                                            if (!(await testPath(src))) 
+                                                return showToast("Couldn't find skin from path");
+                                            
+                                            //check if its a skin
+                                            const buff = await Neutralino.filesystem.readBinaryFile(src);
+                                            if (!(await Manager.skins.isSkin(buff)))
+                                                return showToast("The file you specified wasn't a valid skin file");
+
+                                            setSkin(src);
+                                        }}
                                     />
-                                    <Button id="skin-select" onclick={async () => {
-                                        const res = await Neutralino.os.showOpenDialog(
-                                            "Select a skin",
-                                            {
-                                                multiSelections: false,
-                                                filters: [
-                                                    {name: 'Images', extensions: ['jpg', 'jpeg', 'png']},
-                                                ]
-                                            }
-                                        );
-                                        if (!res || res.length === 0) return;
-                                        const src = res[0].trim();
-                                        if (!src.endsWith(".jpg") &&
-                                            !src.endsWith(".jpeg") &&
-                                            !src.endsWith(".png"))
-                                            return showToast("Please select a valid skin file"); // extra check as sometimes a file explorer bypasses filter
-
-                                        if (!(await testPath(src))) 
-                                            return showToast("Couldn't find skin from path");
-                                        
-                                        //check if its a skin
-                                        const buff = await Neutralino.filesystem.readBinaryFile(src);
-                                        if (!(await Manager.skins.isSkin(buff)))
-                                            return showToast("The file you specified wasn't a valid skin file");
-
-                                        setSkin(src);
-                                    }}>
-                                        Choose a Skin
-                                    </Button>
                                 </div>
                                 <h2>Your skin will default to steve if you don't select one.</h2>
                             </>

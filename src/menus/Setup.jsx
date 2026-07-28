@@ -4,13 +4,16 @@ import { useState, useEffect } from "preact/hooks";
 import Neutralino from "@neutralinojs/lib";
 import { useManager } from "../utils/ManagerProvider.jsx";
 import { useSettings } from "../utils/SettingsStore.jsx";
-import { showToast } from "../components/Toast.jsx";
+import Net from "../lib/net.js";
 
 import config from "../data/config.js";
 
+import { showToast } from "../components/Toast.jsx";
+import { showAlert } from "../components/Alert.jsx";
 import Button from "../components/Button.jsx";
 import Textbox from "../components/Textbox.jsx";
 import Checkbox from "../components/Checkbox.jsx";
+import Select from "../components/Select.jsx";
 
 import minecraftLogo from "../assets/ui/minecraftlogo.png";
 
@@ -29,6 +32,7 @@ export default function SetupMenu({ setMenu, reloadData }) {
     const [username, setUsername] = useState("");
     const [UID, setUID] = useState("");
     const [skin, setSkin] = useState(undefined);
+    const [skinMode, setSkinMode] = useState("file");
     const [progress, setProgress] = useState({ active: false, label: '', percent: 0 });
 
     useEffect(() => {
@@ -74,10 +78,7 @@ export default function SetupMenu({ setMenu, reloadData }) {
 
     const joinDiscordPrompt = async () => {
         try {
-            let shouldDo = await Neutralino.os
-                        .showMessageBox('LC Launcher Discord',
-                                        'Do you want to join our Discord server?',
-                                        'YES_NO', 'INFO');
+            let shouldDo = await showAlert('LC Launcher Discord', 'Do you want to join our Discord server?', 'YES_NO');
             if(shouldDo == 'YES') {
                 console.log("Opening discord...");
                 for await (const inv of config.discordInvite) {
@@ -89,15 +90,71 @@ export default function SetupMenu({ setMenu, reloadData }) {
         };
     };
 
+    const fetchDataURI = async (imageUrl) => {
+        const skinRes = await fetch(imageUrl);
+        if (!skinRes.ok) throw new Error("Failed to download skin image");
+        const skinBlob = await skinRes.blob();
+
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(skinBlob);
+        });
+    };
+
     const handleNext = async () => {
         if (!ready) return showToast("You need to enter a valid username");
 
         joinDiscordPrompt();
         setProcessing(true);
         try {
-            await Manager.profiles.create({
+            let skinDataURI = null;
+            if (skinMode === "java") {
+                showToast("Fetching Java Edition skin...");
+                try {
+                    const profileRes = await Net.get(`https://api.mojang.com/users/profiles/minecraft/${username}`);
+                    if (!profileRes.ok || !profileRes.data?.id) throw new Error("Java user not found");
+
+                    const uuid = profileRes.data.id;
+
+                    const sessionRes = await Net.get(`https://sessionserver.mojang.com/session/minecraft/profile/${uuid}`);
+                    if (!sessionRes.ok || !sessionRes.data?.properties) throw new Error("Profile texture not found");
+
+                    const texturesProp = sessionRes.data.properties.find(p => p.name === 'textures');
+                    if (!texturesProp?.value) throw new Error("No texture property found");
+
+                    const decoded = JSON.parse(atob(texturesProp.value));
+                    const skinUrl = decoded?.textures?.SKIN?.url;
+
+                    if (skinUrl) skinDataURI = await fetchDataURI(skinUrl);
+                } catch (e) {
+                    console.error(e);
+                    showToast("Failed to fetch Java Edition skin");
+                    skinDataURI = undefined;
+                };
+            } else if (skinMode === "bedrock") {
+                showToast("Fetching Bedrock Edition skin...");
+                try {
+                    const geyserRes = await Net.get(`https://api.geysermc.org/v2/xbox/xuid/${username}`);
+                    if (!geyserRes.ok || !geyserRes.data?.xuid) throw new Error("Bedrock user not found");
+
+                    const xuid = geyserRes.data.xuid;
+                    const skinRes = await Net.get(`https://api.geysermc.org/v2/skin/${xuid}`);
+                    if (!skinRes.ok || !skinRes.data?.is_steve) {
+                        const skinUrl = `https://api.geysermc.org/v2/skin/${xuid}/texture`;
+                        skinDataURI = await fetchDataURI(skinUrl);
+                    };
+                } catch (e) {
+                    console.error(e);
+                    showToast("Failed to fetch Bedrock Edition skin");
+                    skinDataURI = undefined;
+                };
+            } else if (skin) skinDataURI = skin;
+            
+            const newProfile = await Manager.profiles.create({
                 username,
-                skin: skin || undefined,
+                skin: skinDataURI || undefined,
                 uid: UID !== "" ? UID : undefined
             });
 
@@ -174,69 +231,86 @@ export default function SetupMenu({ setMenu, reloadData }) {
                             minlength={3}
                             maxlength={16}
                         />
-                        <div id="skin-box">
-                            <Textbox
-                                id="skin-path"
-                                onchange={async (txt) => {
-                                    if (txt.trim() === "") return setSkin(undefined);
+                        <Select
+                            label="Skin Mode"
+                            value={skinMode}
+                            options={[
+                                { label: "File", value: "file" },
+                                { label: "Java Skin", value: "java" },
+                                { label: "Bedrock Skin", value: "bedrock" }
+                            ]}
+                            onChange={(val) => setSkinMode(val)}
+                        />
+                        {skinMode === "file" ? (
+                            <>
+                                <div id="skin-box">
+                                    <Textbox
+                                        id="skin-path"
+                                        onchange={async (txt) => {
+                                            if (txt.trim() === "") return setSkin(undefined);
 
-                                    if (!(await testPath(txt))) {
-                                        showToast("Couldn't find skin from path");
-                                        return setSkin(undefined);
-                                    };
+                                            if (!(await testPath(txt))) {
+                                                showToast("Couldn't find skin from path");
+                                                return setSkin(undefined);
+                                            };
 
-                                    if (!txt.endsWith(".jpg") &&
-                                        !txt.endsWith(".jpeg") &&
-                                        !txt.endsWith(".png")) {
-                                        setSkin(undefined);
-                                        return showToast("Please select a valid skin file");
-                                    };
+                                            if (!txt.endsWith(".jpg") &&
+                                                !txt.endsWith(".jpeg") &&
+                                                !txt.endsWith(".png")) {
+                                                setSkin(undefined);
+                                                return showToast("Please select a valid skin file");
+                                            };
 
-                                    //check if its a skin
-                                    const buff = await Neutralino.filesystem.readBinaryFile(txt);
-                                    if (!(await Manager.skins.isSkin(buff))) {
-                                        setSkin(undefined);
-                                        return showToast("The file you specified wasn't a valid skin file");
-                                    };
+                                            //check if its a skin
+                                            const buff = await Neutralino.filesystem.readBinaryFile(txt);
+                                            if (!(await Manager.skins.isSkin(buff))) {
+                                                setSkin(undefined);
+                                                return showToast("The file you specified wasn't a valid skin file");
+                                            };
 
-                                    setSkin(txt.trim());
-                                }}
-                                value={skin}
-                                placeholder="Skin path..."
-                                label="Enter your skin's path"
-                                minlength={3}
-                                maxlength={150}
-                            />
-                            <Button id="skin-select" onclick={async () => {
-                                const res = await Neutralino.os.showOpenDialog(
-                                    "Select a skin",
-                                    {
-                                        multiSelections: false,
-                                        filters: [
-                                            {name: 'Images', extensions: ['jpg', 'jpeg', 'png']},
-                                        ]
-                                    }
-                                );
-                                if (!res || res.length === 0) return;
-                                const src = res[0].trim();
-                                if (!src.endsWith(".jpg") &&
-                                    !src.endsWith(".jpeg") &&
-                                    !src.endsWith(".png"))
-                                    return showToast("Please select a valid skin file"); // extra check as sometimes a file explorer bypasses filter
+                                            setSkin(txt.trim());
+                                        }}
+                                        value={skin}
+                                        placeholder="Skin path..."
+                                        label="Enter your skin's path"
+                                        minlength={3}
+                                        maxlength={150}
+                                        isFilePicker={true}
+                                        onPick={async () => {
+                                            const res = await Neutralino.os.showOpenDialog(
+                                                "Select a skin",
+                                                {
+                                                    multiSelections: false,
+                                                    filters: [
+                                                        {name: 'Images', extensions: ['png']},
+                                                    ]
+                                                }
+                                            );
+                                            if (!res || res.length === 0) return;
+                                            const src = res[0].trim();
+                                            if (!src.endsWith(".png"))
+                                                return showToast("Please select a valid skin file"); // extra check as sometimes a file explorer bypasses filter
 
-                                if (!(await testPath(src))) 
-                                    return showToast("Couldn't find skin from path");
-                                
-                                //check if its a skin
-                                const buff = await Neutralino.filesystem.readBinaryFile(src);
-                                if (!(await Manager.skins.isSkin(buff)))
-                                    return showToast("The file you specified wasn't a valid skin file");
+                                            if (!(await testPath(src))) 
+                                                return showToast("Couldn't find skin from path");
+                                            
+                                            //check if its a skin
+                                            const buff = await Neutralino.filesystem.readBinaryFile(src);
+                                            if (!(await Manager.skins.isSkin(buff)))
+                                                return showToast("The file you specified wasn't a valid skin file");
 
-                                setSkin(src);
-                            }}>
-                                Choose a Skin
-                            </Button>
-                        </div>
+                                            setSkin(src);
+                                        }}
+                                    />
+                                </div>
+                                <h2>Your skin will default to steve if you don't select one.</h2>
+                            </>
+                        ) : (skinMode === "java" ? (
+                            <h2>Will use <b>{username || "Steve"}</b>'s Java Edition skin</h2>
+                        ) : (
+                            <h2>Will use <b>{username || "Steve"}</b>'s Bedrock Edition skin</h2>
+                        ))}
+
                         <Textbox
                             id="chosen-uid"
                             onchange={async (txt) => {

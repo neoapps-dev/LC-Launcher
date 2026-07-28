@@ -79,7 +79,7 @@ class NeutralinoExtension extends EventEmitter {
         }
     }
 
-    run(onReceiveMessage, timeoutMs = 5000) {
+    run(onReceiveMessage, timeoutMs = 5000, onExit = null) {
         //
         //  Socket-handler main loop. Sends and receives messages.
         //  :param onReceiveMessage: Callback for incoming messages
@@ -87,6 +87,23 @@ class NeutralinoExtension extends EventEmitter {
         const WebSocket = require('ws');
         this.socket = new WebSocket(this.urlSocket);
         let self = this;
+
+        let isExiting = false;
+        const extExit = (code) => {
+            if (isExiting) return;
+            isExiting = true;
+ 
+            if (typeof onExit === 'function') {
+                Promise.resolve()
+                    .then(() => onExit(code))
+                    .catch((err) => {
+                        console.error("onExit threw", err);
+                        process.exit(code);
+                    });
+            } else {
+                process.exit(code);
+            };
+        };
 
         const connectionTimeout = setTimeout(() => {
             console.error(`WebSocket timeout: failed to connect within ${timeoutMs}ms`);
@@ -111,7 +128,7 @@ class NeutralinoExtension extends EventEmitter {
             try {
                 if(self.termOnWindowClose) {
                     if(msg.event === 'windowClose' || msg.event === 'appClose')
-                        return process.exit(0);
+                        return extExit(0);
                 }
             }
             catch (e) {}
@@ -123,13 +140,13 @@ class NeutralinoExtension extends EventEmitter {
         this.socket.on('close', (code, reason) => {
             clearTimeout(connectionTimeout);
             console.log(`WebSocket closed: ${code} - ${reason}`);
-            process.exit(0);
+            extExit(0);
         });
 
         this.socket.on('error', (error) => {
             clearTimeout(connectionTimeout);
             console.error(`WebSocket Error: ${error}`);
-            process.exit(1);
+            extExit(1);
         });
     }
     isEvent(e, eventName) {

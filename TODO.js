@@ -7,7 +7,6 @@
 // TODO make worlds menu work
 // TODO add a corrupted installation fix menu
 // TODO convert LCE world to Java worlds. https://je2be.app
-// TODO make the skin save a slim and non slim version so that LegacyEvolved can use slim skins. also save 64x64 skin if they import one for neo
 // TODO add multiplayer overlays to show notifications when playing lce
 // TODO add realms which basically uses multiplayer system BUT if someone hosting u join their game otherwise u download world from server and host it, then u save to server when u exit.
 // TODO add world backups online, dont add until 20th march cause neo will kill u.
@@ -15,12 +14,14 @@
 // TODO add a way to view achivements inside the launcher
 
 // NEEDED BEFORE RELEASE
-//+ TODO add cape menu and make the profile skin be placed as a DLC rather than replacing steve
-//+ TODO make all the popups browser based to reduce need on zenity (also fits in theme more)
+//+ TODO add cape menu (capes btn on edit/create skin which opens another menu with grid of cape presets and an extra one with upload icon)
 //+ TODO add more detailed playtime so when u click on it in bottom corner it opens up and shows usage sessions, eg. 50 mins here 20 mins there.
-//+ TODO add file icon next to the icon and background textbox for instances which gets the file and turns it into data uri
 //+ TODO fix the auto update to update libs also
-//+ TODO fix the java and bedrock skin fetch as the api went down
-//+ TODO fix the issue where the lcLib is left running in the background
 
+//+ TODO bundle zenity and fix local library paths
 //+ TODO add option to toggle panoramas
+//+ TODO fix the java and bedrock skin fetch as the api went down
+//+ TODO add file icon next to the icon and background textbox for instances which gets the file and turns it into data uri
+//+ TODO make all the popups browser based to reduce need on zenity (also fits in theme more)
+//+ TODO fix the issue where the lcLib is left running in the background
+//+ TODO make the profile skin be placed as a DLC rather than replacing steve

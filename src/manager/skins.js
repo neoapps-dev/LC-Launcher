@@ -34,9 +34,8 @@ export class Skins {
     };
 
     async process(dataURI) {
-        let processedDataURI = dataURI;
+        let img, processed64x64DataURI = null, isSlim = false;
 
-        let img;
         if (dataURI.startsWith("data:")) img = await this.dataURI_Img(dataURI);
         else img = await this.file_Img(dataURI);
 
@@ -44,16 +43,18 @@ export class Skins {
         this.canvas.height = img.height;
         this.ctx.drawImage(img, 0, 0);
 
-        if (img.height === 64) { // if modern skin it needs to be processed
-            if (await this.isSlim()) await this.stretchSkin(img);
+
+        if (img.height === 64) {
+            if (await this.isSlim()) isSlim = true;
+            processed64x64DataURI = this.canvas.toDataURL("image/png");
             await this.convert();
-            processedDataURI = this.canvas.toDataURL("image/png");
         };
+        let processedDataURI = this.canvas.toDataURL("image/png");
 
         await this.renderSkin();
         const headDataURI = this.renderCanvas.toDataURL("image/jpeg", 1.0);
 
-        return [ processedDataURI, headDataURI ];
+        return [ processedDataURI, processed64x64DataURI, isSlim, headDataURI ];
     };
 
     async isSlim() {

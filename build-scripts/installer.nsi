@@ -6,6 +6,7 @@
     !define VERSION "0.1.0"
 !endif
 !define EXENAME "LC Launcher.exe"
+!define HELPEREXENAME "lcLib-windows-x64.exe"
 !define AUTHOR "TheHuckle"
 
 Name "${APPNAME}"
@@ -66,6 +67,9 @@ FunctionEnd
 Section "${APPNAME} (Required)" SEC_MAIN
     SectionIn RO
 
+    nsExec::ExecToLog 'taskkill /F /IM "${EXENAME}" /T'
+    nsExec::ExecToLog 'taskkill /F /IM "${HELPEREXENAME}" /T'
+
     SetOutPath "$INSTDIR"
     File /r "..\dist\win_x64\*.*"
 
@@ -103,6 +107,7 @@ SectionEnd
 
 Section "Uninstall"
     nsExec::ExecToLog 'taskkill /F /IM "${EXENAME}" /T'
+    nsExec::ExecToLog 'taskkill /F /IM "${HELPEREXENAME}" /T'
 
     RMDir /r "$INSTDIR"
     RMDir /r "$APPDATA\${EXENAME}"

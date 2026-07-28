@@ -13,7 +13,8 @@
         target: "minecraft-client-linux.zip",
         compatibilityLayer: "DIRECT",
         supportedPlatforms: ["Linux"],
-        supportsSlimSkins: false
+        supportsSlimSkins: false,
+        supports64x64Skins: false
     },
 */
 
@@ -41,7 +42,8 @@
         target: "LCEWindows64.zip",
         compatibilityLayer: "RUNTIME",
         supportedPlatforms: ["Windows","Linux","Darwin"],
-        supportsSlimSkins: false
+        supportsSlimSkins: false,
+        supports64x64Skins: false
     },
     {
         id: "minecraft-consoles",
@@ -64,7 +66,8 @@
         target: "LCEWindows64.zip",
         compatibilityLayer: "RUNTIME",
         supportedPlatforms: ["Windows","Linux","Darwin"],
-        supportsSlimSkins: false
+        supportsSlimSkins: false,
+        supports64x64Skins: false
     },
 */
 
@@ -90,7 +93,8 @@ export const defaultInstances = [
         target: "LCE-Revelations-Client-Win64.zip",
         compatibilityLayer: "RUNTIME",
         supportedPlatforms: ["Windows","Linux","Darwin"],
-        supportsSlimSkins: false
+        supportsSlimSkins: false,
+        supports64x64Skins: false
     },
     {
         id: "neo-legacy",
@@ -113,7 +117,8 @@ export const defaultInstances = [
         target: "neoLegacyWindows64.zip",
         compatibilityLayer: "RUNTIME",
         supportedPlatforms: ["Windows","Linux","Darwin"],
-        supportsSlimSkins: true
+        supportsSlimSkins: true,
+        supports64x64Skins: true
     },
     {
         id: "hellish-ends",
@@ -136,6 +141,7 @@ export const defaultInstances = [
         target: "LCEWindows64.zip",
         compatibilityLayer: "RUNTIME",
         supportedPlatforms: ["Windows","Linux","Darwin"],
-        supportsSlimSkins: false
+        supportsSlimSkins: false,
+        supports64x64Skins: false
     }
 ];

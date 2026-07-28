@@ -33,6 +33,8 @@ export default function CreateInstanceMenu({ setMenu, setInstance, reloadData })
         serviceType: "GITHUB",
         serviceDomain: "github.com",
         compatibilityLayer: "DIRECT",
+        supportsSlimSkins: false,
+        supports64x64Skins: false,
         ip: "",
         port: "",
         fullscreen: false,
@@ -174,10 +176,23 @@ export default function CreateInstanceMenu({ setMenu, setInstance, reloadData })
         };
     };
 
-    const handleSelectBuildDir = async () => {
-        const res = await Neutralino.os.showFolderDialog("Select Local Build Directory");
-        if (!res || res.length === 0) return;
-        updateForm('repo', res);
+    async function testFolderPath(path) {
+        try {
+            const stats = await Neutralino.filesystem.getStats(path);
+            if (stats.type == "FILE") throw new Error();
+            return true;
+        } catch {
+            return false;
+        };
+    };
+
+    async function testPath(path) {
+        try {
+            await Neutralino.filesystem.getStats(path);
+            return true;
+        } catch {
+            return false;
+        };
     };
 
     return (
@@ -272,12 +287,17 @@ export default function CreateInstanceMenu({ setMenu, setInstance, reloadData })
                             "ghost/LCESource"
                         }
                         maxlength={200}
+                        isFolderPicker={form.serviceType === "LOCAL"}
+                        onPick={async () => {
+                            const res = await Neutralino.os.showFolderDialog("Select a build folder");
+                            if (!res || res.length === 0) return;
+                            const src = res[0].trim();
+
+                            if (!(await testFolderPath(src))) return showToast("Couldn't find local build folder");
+
+                            updateForm('repo', res);
+                        }}
                     />
-                    {form.serviceType == "LOCAL" &&
-                        <Button onclick={handleSelectBuildDir}>
-                            Choose Local Build Path
-                        </Button>
-                    }
                     {form.serviceType !== "URL" && form.serviceType !== "LOCAL" && (
                         <>
                             <Select 
@@ -307,6 +327,50 @@ export default function CreateInstanceMenu({ setMenu, setInstance, reloadData })
                         onchange={(v) => updateForm('icon', v)}
                         maxlength={99999}
                         placeholder="data:image/png;base64..."
+                        isFilePicker={true}
+                        onPick={async () => {
+                            const res = await Neutralino.os.showOpenDialog(
+                                "Select an instance icon",
+                                {
+                                    multiSelections: false,
+                                    filters: [
+                                        {name: 'Images', extensions: ['jpg', 'jpeg', 'png']},
+                                    ]
+                                }
+                            );
+                            if (!res || res.length === 0) return;
+                            const src = res[0].trim();
+                            if (!src.endsWith(".jpg") &&
+                                !src.endsWith(".jpeg") &&
+                                !src.endsWith(".png"))
+                                return showToast("Please select a valid image file"); // extra check as sometimes a file explorer bypasses filter
+
+                            if (!(await testPath(src))) 
+                                return showToast("Couldn't find image from path");
+                            
+                            try {
+                                const maxImgSize = 128 * 1024; // 128KiB
+                                const stats = await Neutralino.filesystem.getStats(src);
+                                if (stats.size > maxImgSize) return showToast("Image is too large, max is 128KiB");
+                                
+                                const buffer = await Neutralino.filesystem.readBinaryFile(src);
+
+                                const bytes = new Uint8Array(buffer);
+                                let binary = '';
+                                for (let i = 0; i < bytes.byteLength; i++) {
+                                    binary += String.fromCharCode(bytes[i]);
+                                };
+                                const base64 = btoa(binary);
+
+                                const mimeType = src.endsWith(".png") ? 'image/png' : 'image/jpeg';
+                                const dataUri = `data:${mimeType};base64,${base64}`;
+
+                                updateForm('icon', dataUri);
+                            } catch (err) {
+                                console.error(err);
+                                showToast("Failed to process the image file");
+                            };
+                        }}
                     />
                     <Textbox
                         label="Logo Data URI"
@@ -314,6 +378,50 @@ export default function CreateInstanceMenu({ setMenu, setInstance, reloadData })
                         onchange={(v) => updateForm('logo', v)}
                         maxlength={99999}
                         placeholder="data:image/png;base64..."
+                        isFilePicker={true}
+                        onPick={async () => {
+                            const res = await Neutralino.os.showOpenDialog(
+                                "Select an instance logo",
+                                {
+                                    multiSelections: false,
+                                    filters: [
+                                        {name: 'Images', extensions: ['jpg', 'jpeg', 'png']},
+                                    ]
+                                }
+                            );
+                            if (!res || res.length === 0) return;
+                            const src = res[0].trim();
+                            if (!src.endsWith(".jpg") &&
+                                !src.endsWith(".jpeg") &&
+                                !src.endsWith(".png"))
+                                return showToast("Please select a valid image file"); // extra check as sometimes a file explorer bypasses filter
+
+                            if (!(await testPath(src))) 
+                                return showToast("Couldn't find image from path");
+                            
+                            try {
+                                const maxImgSize = 512 * 1024; // 512KiB
+                                const stats = await Neutralino.filesystem.getStats(src);
+                                if (stats.size > maxImgSize) return showToast("Image is too large, max is 512KiB");
+                                
+                                const buffer = await Neutralino.filesystem.readBinaryFile(src);
+
+                                const bytes = new Uint8Array(buffer);
+                                let binary = '';
+                                for (let i = 0; i < bytes.byteLength; i++) {
+                                    binary += String.fromCharCode(bytes[i]);
+                                };
+                                const base64 = btoa(binary);
+
+                                const mimeType = src.endsWith(".png") ? 'image/png' : 'image/jpeg';
+                                const dataUri = `data:${mimeType};base64,${base64}`;
+
+                                updateForm('logo', dataUri);
+                            } catch (err) {
+                                console.error(err);
+                                showToast("Failed to process the image file");
+                            };
+                        }}
                     />
                     <Select
                         label="Background Mode"
@@ -334,6 +442,50 @@ export default function CreateInstanceMenu({ setMenu, setInstance, reloadData })
                             onchange={(v) => updateForm('background', v)}
                             maxlength={99999}
                             placeholder="data:image/png;base64..."
+                            isFilePicker={true}
+                            onPick={async () => {
+                                const res = await Neutralino.os.showOpenDialog(
+                                    "Select an instance background",
+                                    {
+                                        multiSelections: false,
+                                        filters: [
+                                            {name: 'Images', extensions: ['jpg', 'jpeg', 'png']},
+                                        ]
+                                    }
+                                );
+                                if (!res || res.length === 0) return;
+                                const src = res[0].trim();
+                                if (!src.endsWith(".jpg") &&
+                                    !src.endsWith(".jpeg") &&
+                                    !src.endsWith(".png"))
+                                    return showToast("Please select a valid image file"); // extra check as sometimes a file explorer bypasses filter
+
+                                if (!(await testPath(src))) 
+                                    return showToast("Couldn't find image from path");
+                                
+                                try {
+                                    const maxImgSize = 2 * 1024 * 1024; // 2MiB
+                                    const stats = await Neutralino.filesystem.getStats(src);
+                                    if (stats.size > maxImgSize) return showToast("Image is too large, max is 2MiB");
+                                    
+                                    const buffer = await Neutralino.filesystem.readBinaryFile(src);
+
+                                    const bytes = new Uint8Array(buffer);
+                                    let binary = '';
+                                    for (let i = 0; i < bytes.byteLength; i++) {
+                                        binary += String.fromCharCode(bytes[i]);
+                                    };
+                                    const base64 = btoa(binary);
+
+                                    const mimeType = src.endsWith(".png") ? 'image/png' : 'image/jpeg';
+                                    const dataUri = `data:${mimeType};base64,${base64}`;
+
+                                    updateForm('background', dataUri);
+                                } catch (err) {
+                                    console.error(err);
+                                    showToast("Failed to process the image file");
+                                };
+                            }}
                         />
                     ) : (
                         <>
@@ -345,6 +497,50 @@ export default function CreateInstanceMenu({ setMenu, setInstance, reloadData })
                                     onchange={(v) => updatePanorama(i, v)}
                                     maxlength={99999}
                                     placeholder="data:image/png;base64..."
+                                    isFilePicker={true}
+                                    onPick={async () => {
+                                        const res = await Neutralino.os.showOpenDialog(
+                                            "Select a panorama cubemap face",
+                                            {
+                                                multiSelections: false,
+                                                filters: [
+                                                    {name: 'Images', extensions: ['jpg', 'jpeg', 'png']},
+                                                ]
+                                            }
+                                        );
+                                        if (!res || res.length === 0) return;
+                                        const src = res[0].trim();
+                                        if (!src.endsWith(".jpg") &&
+                                            !src.endsWith(".jpeg") &&
+                                            !src.endsWith(".png"))
+                                            return showToast("Please select a valid image file"); // extra check as sometimes a file explorer bypasses filter
+
+                                        if (!(await testPath(src))) 
+                                            return showToast("Couldn't find image from path");
+                                        
+                                        try {
+                                            const maxImgSize = 256 * 1024; // 256KiB
+                                            const stats = await Neutralino.filesystem.getStats(src);
+                                            if (stats.size > maxImgSize) return showToast("Image is too large, max is 256KiB");
+                                            
+                                            const buffer = await Neutralino.filesystem.readBinaryFile(src);
+
+                                            const bytes = new Uint8Array(buffer);
+                                            let binary = '';
+                                            for (let i = 0; i < bytes.byteLength; i++) {
+                                                binary += String.fromCharCode(bytes[i]);
+                                            };
+                                            const base64 = btoa(binary);
+
+                                            const mimeType = src.endsWith(".png") ? 'image/png' : 'image/jpeg';
+                                            const dataUri = `data:${mimeType};base64,${base64}`;
+
+                                            updatePanorama(i, dataUri)
+                                        } catch (err) {
+                                            console.error(err);
+                                            showToast("Failed to process the image file");
+                                        };
+                                    }}
                                 />
                             ))}
                         </>
@@ -372,6 +568,12 @@ export default function CreateInstanceMenu({ setMenu, setInstance, reloadData })
                     </Button>
                     <Button onclick={() => updateForm('quitOnDisconnect', !form.quitOnDisconnect)}>
                         {form.quitOnDisconnect == false ? 'Quit On Disconnect: Disabled' : 'Quit On Disconnect: Enabled'}
+                    </Button>
+                    <Button onclick={() => updateForm('supportsSlimSkins', !form.supportsSlimSkins)}>
+                        {form.supportsSlimSkins == false ? 'Slim Skins: Disabled' : 'Slim Skins: Enabled'}
+                    </Button>
+                    <Button onclick={() => updateForm('supports64x64Skins', !form.supports64x64Skins)}>
+                        {form.supports64x64Skins == false ? '64x64 Skins: Disabled' : '64x64 Skins: Enabled'}
                     </Button>
                 </div>
             </div>

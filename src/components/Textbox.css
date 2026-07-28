@@ -1,8 +1,13 @@
-.mc-textbox {
+.mc-textbox, .mc-textbox-inner {
     display: flex;
     flex-direction: column;
     gap: 4px;
     font-family: sans-serif;
+    width: calc(var(--textbox-size) * 10);
+}
+
+.mc-textbox-inner {
+    flex-direction: row !important;
 }
 
 .mc-textbox label {
@@ -13,8 +18,8 @@
 }
 
 .mc-textbox input {
+    width: 100%;
     height: var(--textbox-size);
-	width: calc(var(--textbox-size) * 10);
 	cursor: pointer;
 	overflow: hidden;
 	white-space: nowrap;
@@ -33,6 +38,10 @@
     color: white;
 }
 
+.mc-textbox input.picker {
+    width: calc(calc(var(--textbox-size) * 10) - 44px);
+}
+
 .mc-textbox input:focus {
     border-color: #d0d0d0;
 }
@@ -44,4 +53,9 @@
 
 .mc-textbox input::placeholder {
     color: #888;
+}
+
+.mc-textbox #mc-textbox-picker {
+    height: var(--textbox-size);
+    width: var(--textbox-size);
 }

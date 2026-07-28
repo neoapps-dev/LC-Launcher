@@ -4,12 +4,11 @@ import Net from '../lib/net.js';
 import Filesystem from "../lib/filesystem.js";
 import ChildProcess from "../lib/childProcess.js";
 
-import { showToast } from "../components/Toast";
+import { showToast } from "../components/Toast.jsx";
+import { showAlert } from "../components/Alert.jsx";
 import { getSetting } from "../utils/settingsManager.js";
 import Download from "../utils/download.js";
 import Unzip from "../utils/unzip.js";
-
-import charPng from '../assets/misc/char.png';
 
 export class Exec {
     constructor(manager) {
@@ -262,33 +261,6 @@ export class Exec {
         };
     };
 
-    async writeSkin(instanceId, dataURI) {
-        try {
-            const baseDir = `${this.manager.instancesDir}/${instanceId}/content`;
-            const filePath = `${baseDir}/Common/res/mob/char.png`;
-
-            if (!dataURI) {
-                await this.manager.utils.ensureDir(`${baseDir}/Common/res/mob`);
-                await Neutralino.filesystem.remove(filePath).catch((e)=>{});
-                if(NL_ARGS.includes("--neu-dev-extension")) await Neutralino.resources.extractFile(`/src${charPng}`, filePath); // dev mode acts differently as the resources path is different due to vite bundling
-                else await Neutralino.resources.extractFile(`/public${charPng}`, filePath);
-                return console.log("Skin written to:", filePath);
-            };
-            
-            const response = await fetch(dataURI, {
-                cache: "no-store"
-            });
-            const arrayBuffer = await response.arrayBuffer();
-
-            await this.manager.utils.ensureDir(`${baseDir}/Common/res/mob`);
-            await Neutralino.filesystem.writeBinaryFile(filePath, arrayBuffer);
-            console.log("Skin written to:", filePath);
-        } catch (err) {
-            console.error("Failed to write skin:", err);
-            return showToast("Error: Skin couldn't be written to instance");
-        };
-    };
-
     parseWINELog(line) {
         if (!line || typeof line !== "string") return;
 
@@ -410,10 +382,7 @@ export class Exec {
         if (!instance.installed) return await this.installInstance(instance, false, false);
 
         if (navigator.onLine === true && await this.needsUpdate(instance)) {
-            let shouldDo = await Neutralino.os
-                        .showMessageBox('Instance Update',
-                                        'Do you want to update your current instance?',
-                                        'YES_NO', 'WARNING');
+            let shouldDo = await showAlert('Instance Update', 'Do you want to update your current instance?', "YES_NO");
             if(shouldDo == 'YES') {
                 console.log("Updating instance...");
                 await this.installInstance(instance, true);
@@ -439,10 +408,7 @@ export class Exec {
             try {
                 await Neutralino.filesystem.getStats(`${runtimePath}/bin/${NL_OS === "Darwin" ? 'wine64' : 'wine'}`);
             } catch {
-                let shouldDo = await Neutralino.os
-                                        .showMessageBox('LC Launcher Runtime',
-                                            'This instance requires the runtime as its compatibility layer. Do you want to install the runtime?',
-                                            'YES_NO', 'INFO');
+                let shouldDo = await showAlert('LC Launcher Runtime', 'This instance requires the runtime as its compatibility layer. Do you want to install the runtime?', 'YES_NO');
                 if(shouldDo == 'YES') {
                     console.log("Installing runtime...");
                     await this.installRuntimeHelper();
@@ -460,9 +426,14 @@ export class Exec {
             else return showToast("Content Directory does not exist");
         };
 
-        // save skin from datauri
-        await this.writeSkin(instanceId, profile.skin);
-
+        // pack skin into dlc
+        try {
+            await this.manager.profiles.packDLC(profileId, instanceId);
+        } catch(e) {
+            console.error(e);
+            showToast("Error when packing skin into DLC");
+        };
+        
         const cwd = await Neutralino.filesystem.getJoinedPath(this.manager.instancesDir, instanceId, "content");
         const execPath = await Neutralino.filesystem.getJoinedPath(cwd, instance.exec);
 
@@ -621,9 +592,42 @@ export class Exec {
                     env: parsedEnvs
                 });
 
-                window.whenQuitting = async (ev) => { // close game also
+                const updateGameData = async () => {
+                    const duration = Date.now() - startTime;
+                    const sessionSeconds = Math.floor(duration / 1000);
+
+                    // update playtime
+                    const instancePath = await Neutralino.filesystem.getJoinedPath(this.manager.instancesDir, instanceId, "instance.json");
+                    const updatedInstance = await this.manager.instances.get(instanceId);
+
+                    const newPlaytime = (updatedInstance.playtime || 0) + sessionSeconds;
+                    const newPlaytimeSessions = [
+                        ...(updatedInstance.playtimeSessions || []),
+                        {
+                            date: Date.now(),
+                            duration: sessionSeconds
+                        }
+                    ];
+
+                    await this.manager.instances.update(updatedInstance.id, {
+                        playtime: newPlaytime,
+                        playtimeSessions: sessionSeconds > 60 ? newPlaytimeSessions : updatedInstance.playtimeSessions
+                    });
+
+                    // read servers.db
+                    await this.manager.servers.read(instanceId);
+
+                    // read profile instance files
+                    await this.manager.profiles.readInstanceFiles(profileId, instanceId);
+                };
+
+                window.whenQuitting = async (hide = true) => { // close game also
+                    if(hide) await Neutralino.window.hide();
+
                     this.userStopped = true;
                     await ChildProcess.kill(proc.id).catch(()=>{});
+                    await updateGameData();
+
                     await new Promise(r => setTimeout(r, 200));
                 };
 
@@ -681,32 +685,8 @@ export class Exec {
                         };
                         case 'exit':
                             const exitCode = data;
-                            const duration = Date.now() - startTime;
-                            const sessionSeconds = Math.floor(duration / 1000);
 
-                            // update playtime
-                            const instancePath = await Neutralino.filesystem.getJoinedPath(this.manager.instancesDir, instanceId, "instance.json");
-                            const updatedInstance = await this.manager.instances.get(instanceId);
-
-                            const newPlaytime = (updatedInstance.playtime || 0) + sessionSeconds;
-                            const newPlaytimeSessions = [
-                                ...(updatedInstance.playtimeSessions || []),
-                                {
-                                    date: Date.now(),
-                                    duration: sessionSeconds
-                                }
-                            ];
-
-                            await this.manager.instances.update(updatedInstance.id, {
-                                playtime: newPlaytime,
-                                playtimeSessions: sessionSeconds > 60 ? newPlaytimeSessions : updatedInstance.playtimeSessions
-                            });
-
-                            // read servers.db
-                            await this.manager.servers.read(instanceId);
-
-                            // read profile instance files
-                            await this.manager.profiles.readInstanceFiles(profileId, instanceId);
+                            await updateGameData();
 
                             // crash detection
                             if (!this.userStopped && (exitCode !== 0 || crashDetected)) {
@@ -752,11 +732,10 @@ export class Exec {
         });
     };
 
-    async stop(id) {
+    async stop() {
         try {
             showToast("Stopping instance...");
-            if(window.whenQuitting) await window.whenQuitting();
-            await ChildProcess.kill(id);
+            if(window.whenQuitting) await window.whenQuitting(false);
         } catch (e) {
             this.userStopped = false;
             console.error("Failed to stop process:", e);

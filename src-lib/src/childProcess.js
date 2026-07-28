@@ -1,5 +1,38 @@
 const activeProcesses = new Map();
 
+function terminate(proc) {
+    if (process.platform === "win32") {
+        try {
+            return Bun.spawnSync(["taskkill", "/PID", String(proc.pid), "/T", "/F"]);
+        } catch (err) {
+            console.error("Failed to terminate process", err);
+        };
+    };
+
+    try {
+        proc.kill(15);
+    } catch (err) {
+        console.error("Failed to signal process:", err);
+    };
+};
+
+function forceKill(proc) {
+    if (process.platform === "win32") {
+        try {
+            Bun.spawnSync(["taskkill", "/PID", String(proc.pid), "/T", "/F"]);
+        } catch (err) {
+            console.error("Failed to force kill process", err);
+        };
+        return;
+    };
+
+    try {
+        proc.kill(9);
+    } catch (err) {
+        console.error("Failed to force kill process:", err);
+    };
+};
+
 class ChildProcess {
     static async spawn(callID, ext, config) {
         const { cmd, args = [], cwd, env = {} } = config;
@@ -23,7 +56,7 @@ class ChildProcess {
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) break;
-                        
+
                         ext.sendMessage('procData', {
                             callID,
                             type: 'stdOut',
@@ -57,7 +90,7 @@ class ChildProcess {
             (async () => {
                 const exitCode = await proc.exited;
                 activeProcesses.delete(callID);
-                
+
                 ext.sendMessage('procData', {
                     callID,
                     type: 'exit',
@@ -78,10 +111,10 @@ class ChildProcess {
         if (!proc) return { success: false, error: "Process not found" };
 
         try {
-            proc.kill(15);
-            
+            terminate(proc);
+
             setTimeout(() => {
-                if (activeProcesses.has(targetCallID)) proc.kill(9);
+                if (activeProcesses.has(targetCallID)) forceKill(proc);
             }, 500);
 
             return { success: true };
@@ -89,18 +122,23 @@ class ChildProcess {
             throw new Error(`Failed to kill process: ${error.message}`);
         };
     };
+
+    static killAll() {
+        for (const [callID, proc] of activeProcesses.entries()) {
+            try {
+                terminate(proc);
+                forceKill(proc);
+            } catch (err) {
+                console.error(`Failed to kill process:`, callID, err);
+            };
+        };
+
+        activeProcesses.clear();
+    };
 };
 
 process.on('exit', () => {
-    for (const [callID, proc] of activeProcesses.entries()) {
-        try {
-            proc.kill(9);
-        } catch (err) {
-            console.error(`Failed to kill process:`, callID, err);
-        };
-    };
-    
-    activeProcesses.clear();
+    ChildProcess.killAll();
 });
 
 module.exports = ChildProcess;

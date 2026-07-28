@@ -3,8 +3,9 @@ import "./Options.css";
 import Neutralino from "@neutralinojs/lib";
 
 import { useSettings } from "../utils/SettingsStore.jsx";
-import { showToast } from "../components/Toast.jsx";
 
+import { showToast } from "../components/Toast.jsx";
+import { showAlert } from "../components/Alert.jsx";
 import Textbox from "../components/Textbox.jsx";
 import Button from "../components/Button.jsx";
 import Slider from "../components/Slider.jsx";
@@ -115,32 +116,28 @@ export default function OptionsMenu({ setMenu }) {
                     label="Data Directory (Must Be Absolute)"
                     minlength={0}
                     maxlength={200}
-                />
-                <Button id="data-select" onclick={async () => {
-                    const res = await Neutralino.os.showFolderDialog("Select data path");
-                    if (!res) return;
-                    const src = res;
-                    if (!(await testPath(src))) {
-                        showToast("Data path isn't a valid folder");
-                        return setTimeout(async() => await Neutralino.app.restartProcess(), 200);
-                    };
-                    
-                    const possible = await dirPossible(src);
-                    if (!possible) {
-                        await defaultSetting('dataDirectory');
-                        return setTimeout(async() => await Neutralino.app.restartProcess(), 200);
-                    };
+                    isFolderPicker={true}
+                    onPick={async () => {
+                        const res = await Neutralino.os.showFolderDialog("Select data path");
+                        if (!res) return;
+                        const src = res;
+                        if (!(await testPath(src))) {
+                            showToast("Data path isn't a valid folder");
+                            return setTimeout(async() => await Neutralino.app.restartProcess(), 200);
+                        };
+                        
+                        const possible = await dirPossible(src);
+                        if (!possible) {
+                            await defaultSetting('dataDirectory');
+                            return setTimeout(async() => await Neutralino.app.restartProcess(), 200);
+                        };
 
-                    await updateSetting('dataDirectory', src);
-                    setTimeout(async() => await Neutralino.app.restartProcess(), 200);
-                }}>
-                    Select data path
-                </Button>
+                        await updateSetting('dataDirectory', src);
+                        setTimeout(async() => await Neutralino.app.restartProcess(), 200);
+                    }}
+                />
                 <Button type="destructive" onclick={async () => {
-                    let shouldDo = await Neutralino.os
-                                .showMessageBox('Confirm',
-                                                'Are you sure you want to erase all data?',
-                                                'YES_NO', 'WARNING');
+                    let shouldDo = await showAlert('Confirm', 'Are you sure you want to erase all data?', "YES_NO");
                     if(shouldDo == 'YES') {
                         await Neutralino.filesystem.remove(settings.dataDirectory);
                         showToast("Erased data, restarting...");
@@ -151,10 +148,7 @@ export default function OptionsMenu({ setMenu }) {
                 </Button>
                 {!NL_PORTABLE &&
                     <Button type="destructive" onclick={async () => {
-                        let shouldDo = await Neutralino.os
-                                    .showMessageBox('Confirm',
-                                                    'Are you sure you want to uninstall?',
-                                                    'YES_NO', 'WARNING');
+                        let shouldDo = await showAlert('Confirm', 'Are you sure you want to uninstall?', "YES_NO");
                         if (shouldDo !== 'YES') return;
 
                         try {
@@ -173,7 +167,6 @@ export default function OptionsMenu({ setMenu }) {
                                 showToast("Uninstalled, quitting...");
                                 setTimeout(async () => {
                                     if (window.whenQuitting) await window.whenQuitting();
-                                    if (window.beforeExitRPC) await window.beforeExitRPC();
                                     await Neutralino.app.exit();
                                 }, 200);
                             } else if (NL_OS === "Linux") {
@@ -195,18 +188,16 @@ export default function OptionsMenu({ setMenu }) {
                                 showToast("Uninstalled, quitting...");
                                 setTimeout(async () => {
                                     if (window.whenQuitting) await window.whenQuitting();
-                                    if (window.beforeExitRPC) await window.beforeExitRPC();
                                     await Neutralino.app.exit();
                                 }, 200);*/
                                 const dataPath = await Neutralino.filesystem.getJoinedPath(settings.dataDirectory, "../");
                                 await Neutralino.filesystem.remove(dataPath);
 
-                                await Neutralino.os.showMessageBox('Uninstall', 'The application data has been removed, you will need to manually remove the app itself');
+                                await showAlert('Uninstall', 'The application data has been removed, you will need to manually remove the app itself', "OK");
 
                                 showToast("Uninstalled, quitting...");
                                 setTimeout(async () => {
                                     if (window.whenQuitting) await window.whenQuitting();
-                                    if (window.beforeExitRPC) await window.beforeExitRPC();
                                     await Neutralino.app.exit();
                                 }, 200);
                             };

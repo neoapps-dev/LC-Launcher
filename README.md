@@ -21,6 +21,8 @@
 <div align="center">
   <a href="https://github.com/thehuckledev/LC-Launcher/stargazers/"><img src="https://img.shields.io/github/stars/thehuckledev/LC-Launcher?colorA=45464f&colorB=7BDCB5&style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij4KPHBhdGggZD0iTTIzNS4yNCw4NC4zOGwtMjguMDYsMjMuNjgsOC41NiwzNS4zOWExMy4zNCwxMy4zNCwwLDAsMS01LjA5LDEzLjkxLDEzLjU0LDEzLjU0LDAsMCwxLTE1LC42OUwxNjQsMTM5bC0zMS42NSwxOS4wNmExMy41MSwxMy41MSwwLDAsMS0xNS0uNjksMTMuMzIsMTMuMzIsMCwwLDEtNS4xLTEzLjkxbDguNTYtMzUuMzlMOTIuNzYsODQuMzhhMTMuMzksMTMuMzksMCwwLDEsNy42Ni0yMy41OGwzNi45NC0yLjkyLDE0LjIxLTMzLjY2YTEzLjUxLDEzLjUxLDAsMCwxLDI0Ljg2LDBsMTQuMjEsMzMuNjYsMzYuOTQsMi45MmExMy4zOSwxMy4zOSwwLDAsMSw3LjY2LDIzLjU4Wk04OC4xMSwxMTEuODlhOCw4LDAsMCwwLTExLjMyLDBMMTguMzQsMTcwLjM0YTgsOCwwLDAsMCwxMS4zMiwxMS4zMmw1OC40NS01OC40NUE4LDgsMCwwLDAsODguMTEsMTExLjg5Wm0tLjUsNjEuMTlMMzQuMzQsMjI2LjM0YTgsOCwwLDAsMCwxMS4zMiwxMS4zMmw1My4yNi01My4yN2E4LDgsMCwwLDAtMTEuMzEtMTEuMzFabTczLTEtNTQuMjksNTQuMjhhOCw4LDAsMCwwLDExLjMyLDExLjMybDU0LjI4LTU0LjI4YTgsOCwwLDAsMC0xMS4zMS0xMS4zMloiIHN0eWxlPSJmaWxsOiAjYmRiZGJkOyIvPgo8L3N2Zz4="></a>
   &nbsp;
+  <a href="https://github.com/thehuckledev/LC-Launcher/releases/"><img src="https://img.shields.io/github/downloads/thehuckledev/LC-Launcher/latest/total?style=for-the-badge&logo=rolldown&logoColor=bdbdbd&labelColor=45464f&color=7BDCB5&label=downloads"></a>
+  &nbsp;
   <a href="https://github.com/thehuckledev/LC-Launcher/releases/"><img src="https://img.shields.io/github/v/release/thehuckledev/LC-Launcher?sort=semver&display_name=tag&date_order_by=published_at&style=for-the-badge&logo=hackthebox&logoColor=bdbdbd&color=7BDCB5"></a>
   &nbsp;
   <a href="https://discord.gg/DBw6V5v8C9"><img src="https://img.shields.io/discord/1482886577867981082?style=for-the-badge&color=%237289DA&labelColor=45464f&logo=discord&logoColor=bdbdbd"></a>
@@ -34,30 +36,67 @@
 Legacy Community Launcher is a multi-platform launcher for Minecraft Legacy Console Edition forks.
 </p>
 
-<h2>Planned Features</h2>
-
-- [x] Multiple Instances
-- [x] Each profile has its own data for each instance (Move program data over when launch and move back when closed)
-- [x] Client Argument config UI
-- [x] Download automatic updates (You can add sources. Use MinecraftConsoles as default)
-- [ ] Mod Loader / Mod downloader support
-- [ ] Export Worlds
-- [ ] Import Worlds
-- [x] Discord RPC Presence
-- [x] Use wine to run apps on linux and macos
-- [ ] Add friends in the launcher which you can launch into their server. (uses discord rpc)
-- [ ] World editor UI. Inventory health food etc
-- [ ] Sandbox Game
-- [x] Skin Editor / Change Skins
-- [x] Patch updates from Git repo
-- [x] Logs window for current instance with find, colors for error msgs etc
-- [x] Import and export instances
-- [ ] Big screen mode with controller support
-
 <h2>Installation</h2>
 
-- Download [latest release](https://git.huckle.dev/TheHuckle/LegacyCommunityLauncher/releases/latest/) and extract the files.
-- Just run the .exe or .app file
+### Windows
+- Download `Setup.exe` from the [latest release](https://git.huckle.dev/TheHuckle/LegacyCommunityLauncher/releases/latest/)
+- Double click the `.exe` file to run it
+- If you get a windows defender warning, just click `More info` and then `Run anyways`
+
+### MacOS
+- Download the `.app` from the [latest release](https://git.huckle.dev/TheHuckle/LegacyCommunityLauncher/releases/latest/)
+- Double click the `.app` file to run it
+- If you get a unverified app publisher popup then:
+  - Open system settings
+  - Click on `Privacy and Security` and scroll down
+  - You will find a button saying `Open Anyways`, click it
+  - It will ask for your password and give you another confirmation prompt
+  - It will then open after you confirm
+
+### Linux
+- Download the `.AppImage` from the [latest release](https://git.huckle.dev/TheHuckle/LegacyCommunityLauncher/releases/latest/)
+- You might need to run `chmod a+x ./[filename].AppImage` to make it executeable
+- You can then just double click or run `./[filename].AppImage` to open LC Launcher
+- You can move the `.AppImage` to anywhere, so I recommend you make an `~/Applications` folder
+
+<h2>Planned Features</h2>
+
+- [ ] **Instances & Profiles**
+  - [x] Multiple Instances
+  - [x] Each profile has its own data for each instance
+  - [x] Client Argument config UI
+  - [x] Import and export instances
+  - [ ] Corrupted installation fix menu
+  - [ ] Multiple skins per profile
+  - [ ] Cape menu on profile edit/create
+- [ ] **General**
+  - [x] Download instance updates
+  - [x] Use wine/proton to run instances on Linux and MacOS
+  - [ ] Auto updates with prompt
+  - [ ] Big screen mode with controller support
+  - [ ] Make instances appear as games in Steam
+- [ ] **Save Data**
+  - [x] Skin Editor / Change Skins
+  - [ ] Import / Export Worlds
+  - [ ] Convert LCE worlds to Java worlds ([je2be](https://je2be.app))
+  - [x] Slim & 64x64 skin support for neoLegacy
+- [ ] **Multiplayer**
+  - [ ] Add friends in the launcher
+  - [ ] Friend, chat, and join game system
+  - [ ] Multiplayer overlays / notifications while playing LCE
+  - [ ] Realm hosting and syncing
+- [ ] **Modding**
+  - [ ] Mod Loader support
+  - [ ] Dev tools (.arc, .pak, .loc editor)
+  - [ ] LCE Workshop + Website
+  - [ ] Extensions for the launcher itself
+  - [ ] Sandboxing Wine when running instances
+- [ ] **Misc**
+  - [x] Discord RPC Presence
+  - [x] Game logs with channel parsing and colours
+  - [ ] Detailed playtime breakdown
+  - [x] Option to toggle panoramas
+  - [ ] View achievements inside the launcher
 
 <h2>Contributors</h2>
 <p>All contributions are welcome but please make sure you arn't vibe coding large parts of your code. This will just require a rewrite later and ends up taking more time.</p>

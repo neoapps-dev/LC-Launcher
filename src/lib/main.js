@@ -7,6 +7,7 @@
 import Neutralino from "@neutralinojs/lib";
 
 const pendingCalls = new Map();
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 class lcLib {
     constructor(debug=false) {
@@ -24,11 +25,20 @@ class lcLib {
             else reject(new Error(error));
         });
 
-        if(NL_MODE !== 'window') {
-            window.addEventListener('beforeunload', function (e) {
+        if (NL_MODE === 'window') {
+            Neutralino.events.on('windowClose', async () => {
+                try {
+                    await this.stop();
+                } catch (err) {
+                    console.error("EXT_BUN: Error during graceful exit, forcing app exit", err);
+                    await Neutralino.app.exit();
+                };
+            });
+        } else {
+            window.addEventListener('beforeunload', (e) => {
                 e.preventDefault();
                 e.returnValue = '';
-                lib.stop();
+                this.stop();
                 return '';
             });
         };
@@ -71,6 +81,7 @@ class lcLib {
             console.log(`EXT_BUN: Calling ${ext}.${event}`);
         };
         await Neutralino.extensions.dispatch(ext, event, "");
+        await sleep(200);
         await Neutralino.app.exit();
     };
 };

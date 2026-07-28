@@ -1,5 +1,5 @@
 import Neutralino from "@neutralinojs/lib";
-import { showToast } from "../components/Toast";
+import { showToast } from "../components/Toast.jsx";
 
 export class Worlds {
     constructor(manager) {

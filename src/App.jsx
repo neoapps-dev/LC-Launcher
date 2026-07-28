@@ -13,6 +13,7 @@ import Net from "./lib/net.js";
 
 import Window from "./components/Window.jsx";
 import Toast, { showToast } from "./components/Toast.jsx";
+import Alert from "./components/Alert.jsx";
 
 import SetupMenu from "./menus/Setup.jsx";
 import SetupOptionsMenu from "./menus/SetupOptions.jsx";
@@ -568,6 +569,7 @@ export default function App() {
             </Window>
 
             <Toast />
+            <Alert />
         </>
     );
 };

@@ -156,7 +156,7 @@ export default function MainMenu({ setMenu, instance, setInstance, profile, setP
                         </Button>
                         <Button id="play-button" type={runningProc !== null ? "destructive" : "primary"} disabled={!instance?.id || !profile?.id || progress.active || (processing && runningProc === null)} pushable={!progress.active || !processing || runningProc !== null} onclick={async () => {
                             if (runningProc !== null) {
-                                await Manager.exec.stop(runningProc);
+                                await Manager.exec.stop();
                             } else {
                                 const wasInstalled = instance?.installed;
                                 await Manager.exec.launch(instance?.id, profile?.id);

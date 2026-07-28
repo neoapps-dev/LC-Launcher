@@ -1,5 +1,6 @@
 import Neutralino from "@neutralinojs/lib";
 import { showToast } from "../components/Toast.jsx";
+import { showAlert } from "../components/Alert.jsx";
 
 import Filesystem from "../lib/filesystem.js";
 
@@ -65,6 +66,8 @@ export class Instances {
             ip: "",
             port: "",
             compatibilityLayer: "DIRECT",
+            supportsSlimSkins: false,
+            supports64x64Skins: false,
             fullscreen: false,
             quitOnDisconnect: false,
             assetId: null,
@@ -202,6 +205,8 @@ export class Instances {
                 ip: "",
                 port: "",
                 compatibilityLayer: "DIRECT",
+                supportsSlimSkins: false,
+                supports64x64Skins: false,
                 fullscreen: false,
                 quitOnDisconnect: false,
                 customArgs: "",
@@ -232,10 +237,7 @@ export class Instances {
 
             let keepData = "NO";
             if (instance.serviceType !== "LOCAL") {
-                keepData = await Neutralino.os
-                                    .showMessageBox('Reinstall Instance',
-                                                    `Do you want to keep you game data when reinstalling "${instance.name}" instance?`,
-                                                    'YES_NO', 'WARNING');
+                keepData = await showAlert('Reinstall Instance', `Do you want to keep you game data when reinstalling "${instance.name}" instance?`, 'YES_NO');
             };
             
             // reinstall bit
@@ -304,10 +306,7 @@ export class Instances {
     };
 
     async deleteScreenshot(name, path) {
-        let confirmDelete = await Neutralino.os
-                                    .showMessageBox('Delete Screenshot',
-                                                    `Are you sure you want to delete "${name}" screenshot?`,
-                                                    'YES_NO', 'WARNING');
+        let confirmDelete = await showAlert('Delete Screenshot', `Are you sure you want to delete "${name}" screenshot?`, 'YES_NO');
         if (confirmDelete !== "YES") return false;
 
         try {

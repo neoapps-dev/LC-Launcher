@@ -1,3 +1,5 @@
+import "./Toast.css";
+
 import { useEffect, useState } from "preact/hooks";
 
 let pushToast;
