@@ -17,6 +17,8 @@
 //+ TODO add cape menu (capes btn on edit/create skin which opens another menu with grid of cape presets and an extra one with upload icon)
 //+ TODO add more detailed playtime so when u click on it in bottom corner it opens up and shows usage sessions, eg. 50 mins here 20 mins there.
 //+ TODO fix the auto update to update libs also
+//+ TODO Finish the install.sh for linux
+//+ TODO Make the amount of time spent when exiting, stopping, launching all less by optimising the write stream for only diff
 
 //+ TODO bundle zenity and fix local library paths
 //+ TODO add option to toggle panoramas
@@ -25,3 +27,4 @@
 //+ TODO make all the popups browser based to reduce need on zenity (also fits in theme more)
 //+ TODO fix the issue where the lcLib is left running in the background
 //+ TODO make the profile skin be placed as a DLC rather than replacing steve
+//+ TODO fix waiting for extension issue
