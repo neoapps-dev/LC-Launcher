@@ -58,8 +58,8 @@ jobs:
                 chmod +x linuxdeploy-plugin-gstreamer.sh
                 sudo mv linuxdeploy-plugin-gstreamer.sh /usr/local/bin/
 
-            - name: Install installer deps (Linux ARM)
-              if: matrix.target == 'linux-arm'
+            - name: Install installer deps (Linux ARM64)
+              if: matrix.target == 'linux-arm64'
               run: |
                 sudo apt-get update
                 sudo apt-get install -y zenity libfuse2 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-gl
