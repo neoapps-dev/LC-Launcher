@@ -348,7 +348,7 @@ function buildApp(portable) {
 
         if (shouldBuild('linux') || shouldBuild('darwin')) buildBase(!portable);
         if (shouldBuild('linux')) buildLinux(cfg, portable, "x64");
-        if (shouldBuild('linux-arm')) buildLinux(cfg, portable, "arm64");
+        if (shouldBuild('linux-arm64')) buildLinux(cfg, portable, "arm64");
         if (shouldBuild('darwin')) buildMac(cfg, portable);
 
         if (shouldBuild('windows')) {
