@@ -58,6 +58,20 @@ jobs:
                 chmod +x linuxdeploy-plugin-gstreamer.sh
                 sudo mv linuxdeploy-plugin-gstreamer.sh /usr/local/bin/
 
+            - name: Install installer deps (Linux ARM)
+              if: matrix.target == 'linux-arm'
+              run: |
+                sudo apt-get update
+                sudo apt-get install -y zenity libfuse2 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-gl
+
+                wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-aarch64.AppImage -O linuxdeploy
+                chmod +x linuxdeploy
+                sudo mv linuxdeploy /usr/local/bin/
+
+                wget https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gstreamer/master/linuxdeploy-plugin-gstreamer.sh -O linuxdeploy-plugin-gstreamer.sh
+                chmod +x linuxdeploy-plugin-gstreamer.sh
+                sudo mv linuxdeploy-plugin-gstreamer.sh /usr/local/bin/
+
             - name: Build lib
               run: bun ./build-scripts/build-lib.js ${{ matrix.target }}
 
