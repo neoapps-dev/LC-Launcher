@@ -54,6 +54,26 @@ Legacy Community Launcher is a multi-platform launcher for Minecraft Legacy Cons
   - It will then open after you confirm
 
 ### Linux
+
+#### Quick **install** script
+- Open your console/terminal and run **ONE** of the following:
+```sh
+curl -sSL https://install.lce-launcher.com | bash
+```
+```sh
+wget -qO- https://install.lce-launcher.com | bash
+```
+
+#### Quick **uninstall** script
+- Open your console/terminal and run **ONE** of the following:
+```sh
+curl -sSL https://uninstall.lce-launcher.com | bash
+```
+```sh
+wget -qO- https://uninstall.lce-launcher.com | bash
+```
+
+#### Manual Install
 - Download the `.AppImage` from the [latest release](https://git.huckle.dev/TheHuckle/LegacyCommunityLauncher/releases/latest/)
 - You might need to run `chmod a+x ./[filename].AppImage` to make it executeable
 - You can then just double click or run `./[filename].AppImage` to open LC Launcher

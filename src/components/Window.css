@@ -37,6 +37,7 @@ body {
     font-family: "Segoe UI", sans-serif;
     background: transparent;
     color: #FFF;
+    overflow: hidden;
 }
 
 h1 {
