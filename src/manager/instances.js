@@ -7,29 +7,45 @@ import Filesystem from "../lib/filesystem.js";
 export class Instances {
     constructor(manager) {
         this.manager = manager;
+        this._instancesCache = new Map();
+        this._listCache = null;
     };
 
-    async list() {
-        const list = await Neutralino.filesystem.readDirectory(this.manager.instancesDir);
-        const validInstances = [];
+    invalidateCache(id = null) {
+        this._listCache = null;
+        if (id) this._instancesCache.delete(id);
+        else this._instancesCache.clear();
+    };
 
-        for (const e of list) {
-            if (e.type !== "DIRECTORY") continue;
+    async list(forceRefresh = false) {
+        if (!forceRefresh && this._listCache !== null) return this._listCache;
 
-            const jsonPath = `${this.manager.instancesDir}/${e.entry}/instance.json`;
+        try {
+            const list = await Neutralino.filesystem.readDirectory(this.manager.instancesDir);
+            const validInstances = [];
 
-            console.log("Listing instances from", jsonPath);
+            for (const e of list) {
+                if (e.type !== "DIRECTORY") continue;
 
-            try {
-                await Neutralino.filesystem.getStats(jsonPath);
-                validInstances.push(e.entry);
-            } catch (err) {};
+                const jsonPath = `${this.manager.instancesDir}/${e.entry}/instance.json`;
+                try {
+                    await Neutralino.filesystem.getStats(jsonPath);
+                    validInstances.push(e.entry);
+                } catch (err) {};
+            };
+
+            this._listCache = validInstances;
+            return validInstances;
+        } catch (err) {
+            console.error("Error listing instances:", err);
+            return [];
         };
-
-        return validInstances;
     };
 
-    async get(id) {
+    async get(id, forceRefresh = false) {
+        if (!id) return null;
+        if (!forceRefresh && this._instancesCache.has(id)) return this._instancesCache.get(id);
+
         try {
             // reading in chunks to fix linux webkitgtk issue where it cant read more than about 2mb due to the websocket message size limit
             //return await this.manager.utils.readJSON(await Neutralino.filesystem.getJoinedPath(this.manager.instancesDir, id, "instance.json"));
@@ -39,10 +55,13 @@ export class Instances {
             console.log(`Instance ${id} fetched with content ${instanceContent?.length || "0"}`);
 
             if (!instanceContent) throw new Error("File not readable");
-            return JSON.parse(instanceContent);
+            
+            const parsed = JSON.parse(instanceContent);
+            this._instancesCache.set(id, parsed);
+            return parsed;
         } catch(e) {
             console.error(`Error fetching instance ${id}`, e);
-            return;
+            return null;
         };
     };
 
@@ -53,7 +72,6 @@ export class Instances {
         if (data.serviceType !== "LOCAL") await this.manager.utils.ensureDir(await Neutralino.filesystem.getJoinedPath(path, "content"));
 
         if (data.serviceType && !["GITHUB", "GITLAB", "GITEA", "URL", "LOCAL"].includes(data.serviceType)) return new Error("serviceType isn't supported yet. Only GITHUB,GITLAB,GITEA are supported at the moment.");
-        //if (data.compatibilityLayer === "RUNTIME") data.compatibilityLayer = (NL_OS === "Darwin") ? "WINE64" : "PROTON";
 
         const instance = {
             icon: undefined,
@@ -77,9 +95,11 @@ export class Instances {
             id,
         };
 
-        // using writing in chunks to fix linux webkitgtk issue where it cant write more than about 2mb due to the websocket message size limit
-        await Filesystem.writeStream(await Neutralino.filesystem.getJoinedPath(path, "instance.json"), instance);
-        //await this.manager.utils.writeJSON(await Neutralino.filesystem.getJoinedPath(path, "instance.json"), instance);
+        const instancePath = await Neutralino.filesystem.getJoinedPath(path, "instance.json");
+        await Filesystem.writeStream(instancePath, instance);
+
+        this._instancesCache.set(id, instance);
+        this.invalidateCache();
 
         return instance;
     };
@@ -91,17 +111,21 @@ export class Instances {
             if (!currentData) throw new Error("Instance not found");
 
             if (data.serviceType && !["GITHUB", "GITLAB", "GITEA", "URL", "LOCAL"].includes(data.serviceType)) return new Error("serviceType isn't supported yet. Only GITHUB,GITLAB,GITEA are supported at the moment.");
-            //if (data.compatibilityLayer === "RUNTIME") data.compatibilityLayer = (NL_OS === "Darwin") ? "WINE64" : "PROTON";
 
-            const updatedData = {
-                ...currentData,
+            const dataDiff = {
                 ...data,
                 id,
             };
+            const updatedData = {
+                ...currentData,
+                ...dataDiff
+            };
 
-            // using writing in chunks to fix linux webkitgtk issue where it cant write more than about 2mb due to the websocket message size limit
-            await Filesystem.writeStream(instancePath, updatedData);
-            //await this.manager.utils.writeJSON(instancePath, updatedData);
+            await Filesystem.writeJSONStream(instancePath, dataDiff);
+
+            this._instancesCache.set(id, updatedData);
+            this.invalidateCache();
+
             return updatedData;
         } catch (err) {
             console.error(`Failed to update instance ${id}:`, err);
@@ -113,17 +137,23 @@ export class Instances {
         try {
             await this.manager.profiles.removeInstanceFiles(id);
             await Neutralino.filesystem.remove(await Neutralino.filesystem.getJoinedPath(this.manager.instancesDir, id));
-        } catch {
-            return;
+        } catch (e) {
+            console.error(`Failed to delete instance ${id}:`, e);
+        } finally {
+            this.invalidateCache(id);
         };
     };
 
-    async openFolder(id) {
+    getOSCommand(targetPath) {
         let cmd = `start ""`;
         if (NL_OS === "Linux") cmd = "xdg-open";
         if (NL_OS === "Darwin") cmd = "open";
+        return `${cmd} "${targetPath}"`;
+    };
+
+    async openFolder(id) {
         const instPath = await Neutralino.filesystem.getJoinedPath(this.manager.instancesDir, id);
-        await Neutralino.os.execCommand(`${cmd} "${instPath}"`)
+        await Neutralino.os.execCommand(this.getOSCommand(instPath));
     };
 
     async export(id) {
@@ -142,15 +172,12 @@ export class Instances {
             filters: [{ name: 'LCE Instance Files', extensions: ['lceinstance.json'] }],
             defaultPath: NL_OS === "Darwin" ? undefined : `${id}.lceinstance.json`
         });
-        if (!savePath) return;
+        if (!savePath) return false;
         const saveFinal = savePath.trim();
         if (!saveFinal.endsWith(".lceinstance.json")) return showToast("You must save as a .lceinstance.json file");
 
-        if (saveFinal) {
-            await this.manager.utils.writeJSON(saveFinal, sterilisedData);
-            return true;
-        };
-        return false;
+        await this.manager.utils.writeJSON(saveFinal, sterilisedData);
+        return true;
     };
 
     async import(jsonStr) {
@@ -182,7 +209,7 @@ export class Instances {
                 };
             };
 
-            const regex = /^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$/gm;
+            const regex = /^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9\-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$/i;
             if (regex.exec(data.serviceDomain) === null) {
                 showToast(`Invalid field: serviceDomain`);
                 throw new Error(`Invalid field: serviceDomain`);
@@ -230,14 +257,12 @@ export class Instances {
     async reinstall(id) {
         try {
             window.dispatchEvent(new CustomEvent("execProcessing", { detail: true }));
-            const instDir = await Neutralino.filesystem.getJoinedPath(this.manager.instancesDir, id);
-            const contentDir = `${instDir}/content`;
-            //const contentDir = await Neutralino.filesystem.getJoinedPath(instDir, 'content'); // this resolves to symlink dest which causes issues when deleting
             const instance = await this.get(id);
+            if (!instance) return;
 
             let keepData = "NO";
             if (instance.serviceType !== "LOCAL") {
-                keepData = await showAlert('Reinstall Instance', `Do you want to keep you game data when reinstalling "${instance.name}" instance?`, 'YES_NO');
+                keepData = await showAlert('Reinstall Instance', `Do you want to keep your game data when reinstalling "${instance.name}" instance?`, 'YES_NO');
             };
             
             // reinstall bit
@@ -297,16 +322,16 @@ export class Instances {
     };
 
     async openScreenshot(path) {
-        await Neutralino.os.execCommand(NL_OS === "Windows" ? `start "" "${path}"` : `open "${path}"`);
+        await Neutralino.os.execCommand(this.getOSCommand(path));
     };
 
     async openScreenshotsFolder(path) {
         const { parentPath } = await Neutralino.filesystem.getPathParts(path, "../");
-        await Neutralino.os.execCommand(NL_OS === "Windows" ? `start "" "${parentPath}"` : `open "${parentPath}"`);
+        await Neutralino.os.execCommand(this.getOSCommand(parentPath));
     };
 
     async deleteScreenshot(name, path) {
-        let confirmDelete = await showAlert('Delete Screenshot', `Are you sure you want to delete "${name}" screenshot?`, 'YES_NO');
+        const confirmDelete = await showAlert('Delete Screenshot', `Are you sure you want to delete "${name}" screenshot?`, 'YES_NO');
         if (confirmDelete !== "YES") return false;
 
         try {

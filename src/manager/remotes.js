@@ -8,90 +8,121 @@ export class Remotes {
         this.manager = manager;
     };
 
-    getReleasesAPI(instance) {
-        const domain = instance.serviceDomain;
-        const repo = instance.repo;
+    getReleasesAPI(instance, tag = null) {
+        const { serviceDomain: domain, repo, serviceType } = instance;
+        const encodedRepo = encodeURIComponent(repo);
+        const encodedTag = tag ? encodeURIComponent(tag) : null;
 
-        switch (instance.serviceType) {
+        switch (serviceType) {
             case "GITHUB":
-                return `https://api.${domain}/repos/${repo}/releases?per_page=150`;
+                if (!tag) return `https://api.${domain}/repos/${repo}/releases?per_page=150`;
+                return tag === 'latest' 
+                    ? `https://api.${domain}/repos/${repo}/releases/latest`
+                    : `https://api.${domain}/repos/${repo}/releases/tags/${encodedTag}`;
 
             case "GITLAB":
-                return `https://${domain}/api/v4/projects/${encodeURIComponent(repo)}/releases`;
+                if (!tag) return `https://${domain}/api/v4/projects/${encodedRepo}/releases`;
+                return `https://${domain}/api/v4/projects/${encodedRepo}/releases/${encodedTag}`;
 
             case "GITEA":
-                return `https://${domain}/api/v1/repos/${repo}/releases?limit=150`;
+                if (!tag) return `https://${domain}/api/v1/repos/${repo}/releases?limit=150`;
+                return tag === 'latest'
+                    ? `https://${domain}/api/v1/repos/${repo}/releases/latest`
+                    : `https://${domain}/api/v1/repos/${repo}/releases/tags/${encodedTag}`;
+
+            default:
+                return null;
         };
     };
 
-    normalizeReleases(service, data) {
+    normalizeRelease(service, release) {
+        if (!release) return null;
+
         if (service === "GITLAB") {
-            return data.map(r => ({
-                tag_name: r.tag_name,
-                body: r.description,
-                assets: (r.assets?.links || []).map(a => ({
+            return {
+                tag_name: release.tag_name,
+                body: release.description,
+                assets: (release.assets?.links || []).map(a => ({
                     name: a.name,
                     browser_download_url: a.url,
                     id: a.url
                 }))
-            }));
+            };
         };
 
-        return data;
+        return release;
     };
 
-    async list(instance) {
-        let headers = {
+    normalizeReleases(service, data) {
+        if (!Array.isArray(data)) return [];
+        return data.map(r => this.normalizeRelease(service, r));
+    };
+
+    getHeaders(serviceType) {
+        const headers = {
             'User-Agent': 'LC-Launcher',
             'Accept': 'application/json'
         };
-        if (instance.serviceType === "GITHUB") {
-            headers = {
-                ...headers,
-                'Accept': 'application/vnd.github+json',
-                'X-GitHub-Api-Version': '2026-03-10'
-            };
+
+        if (serviceType === "GITHUB") {
+            headers['Accept'] = 'application/vnd.github+json';
+            headers['X-GitHub-Api-Version'] = '2026-03-10';
         };
 
-        const res = await Net.get(this.getReleasesAPI(instance), {
-            headers
-        });
-        
-        const data = res?.data;
-        if (!Array.isArray(data) || res.ok !== true) {
-            console.error("API Error or Rate Limit:", data);
+        return headers;
+    };
+
+    async list(instance) {
+        const apiUrl = this.getReleasesAPI(instance);
+        if (!apiUrl) return [];
+
+        try {
+            const res = await Net.get(apiUrl, { headers: this.getHeaders(instance.serviceType) });
+            const data = res?.data;
+
+            if (res?.ok !== true || !Array.isArray(data)) {
+                console.error("API Error or Rate Limit:", data);
+                showToast("Error: Release API Error");
+                return [];
+            };
+
+            const rawReleases = this.normalizeReleases(instance.serviceType, data);
+            const releases = rawReleases.filter(r => !r.tag_name?.toLowerCase().includes("server"));
+
+            if (releases.length > 0) return [{ ...releases[0], tag_name: 'latest' }, ...releases];
+
+            return releases;
+        } catch (err) {
+            console.error("Failed to fetch release list:", err);
             showToast("Error: Release API Error");
             return [];
         };
-
-        let releases = this.normalizeReleases(instance.serviceType, data);
-        releases = releases.filter(r => { // filter out server releases
-            const tag = (r.tag_name || "").toLowerCase();
-            return !tag.includes("server");
-        });
-
-        if (releases.length > 0) {
-            const latestObj = {
-                ...releases[0],
-                tag_name: 'latest'
-            };
-            return [latestObj, ...releases];
-        };
-
-        return releases;
     };
 
     async get(instance, tag) {
-        const releases = await this.list(instance);
-        if (!Array.isArray(releases)) return null;
-        return releases.find(r => r.tag_name === tag);
+        if (!tag) return null;
+
+        const apiUrl = this.getReleasesAPI(instance, tag);
+        if (!apiUrl) return null;
+
+        try {
+            const res = await Net.get(apiUrl, { headers: this.getHeaders(instance.serviceType) });
+            
+            if (res?.ok !== true || !res?.data) return null;
+
+            return this.normalizeRelease(instance.serviceType, res.data);
+        } catch (err) {
+            console.error(`Failed to fetch release tag ${tag}:`, err);
+            return null;
+        };
     };
 
     async patchnotes(instance, tag) {
         const release = await this.get(instance, tag);
-        const plaintxt = release.body;
+        const plaintxt = release?.body;
+        
         if (!plaintxt) return "No patch notes found!";
-        const html = nmd(plaintxt);
-        return html;
+        
+        return nmd(plaintxt);
     };
 };

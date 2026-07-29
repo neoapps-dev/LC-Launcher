@@ -3,6 +3,7 @@ const path = require('node:path');
 const fflate = require('fflate');
 const tarStream = require('tar-stream');
 const { XzReadableStream } = require("xz-decompress");
+const { pipeline } = require('node:stream/promises');
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -91,6 +92,33 @@ class Filesystem {
                 resolve({ success: true });
             });
         });
+    };
+
+    static async writeJSONStream(callID, ext, targetPath, diff = {}) {
+        if (Object.keys(diff).length === 0) return;
+
+        let fullData = {};
+
+        if (fs.existsSync(targetPath)) {
+            try {
+                const raw = await fs.promises.readFile(targetPath, 'utf-8');
+                fullData = JSON.parse(raw);
+            } catch (err) {
+                console.warn(`Failed to parse ${targetPath}, writing new obj`, err);
+                fullData = {};
+            };
+        };
+
+        Object.assign(fullData, diff);
+
+        const jsonString = JSON.stringify(fullData, null, 2);
+        const readStream = fs.ReadStream.from([jsonString]);
+        
+        const writeStream = fs.createWriteStream(targetPath, { flags: 'w' });
+
+        await pipeline(readStream, writeStream);
+
+        return fullData;
     };
 
     static async unzip(callID, ext, config) {

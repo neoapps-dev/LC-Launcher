@@ -59,6 +59,10 @@ export default class Filesystem {
         return await Filesystem.writeStreamEnd(streamID);
     };
 
+    static async writeJSONStream(targetPath, diffObj) {
+        return await lib.run(null, 'filesystem', 'writeJSONStream', targetPath, diffObj);
+    };
+
     static async readStream(targetPath, chunkSize = 32 * 1024, asBase64 = false, delayMs = 10) {
         const callID = crypto.randomUUID();
 

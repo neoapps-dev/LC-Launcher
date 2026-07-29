@@ -72,7 +72,7 @@
     transform: scale(1.01) !important;
 }
 
-#screenshot:active {
+#screenshot:active, #screenshot.expanded:active {
     border: #ffffff32 1px solid !important;
     transform: scale(0.98) !important;
 }

@@ -17,7 +17,6 @@
 //+ TODO add cape menu (capes btn on edit/create skin which opens another menu with grid of cape presets and an extra one with upload icon)
 //+ TODO add more detailed playtime so when u click on it in bottom corner it opens up and shows usage sessions, eg. 50 mins here 20 mins there.
 //+ TODO fix the auto update to update libs also
-//+ TODO Make the amount of time spent when exiting, stopping, launching all less by optimising the write stream for only diff
 
 //+ TODO bundle zenity and fix local library paths
 //+ TODO add option to toggle panoramas
@@ -30,3 +29,4 @@
 //+ TODO Finish the install.sh for linux
 //+ TODO added arm64 version
 //+ TODO fix discord rpc skin icon
+//+ TODO Make the amount of time spent when exiting, stopping, launching all less by optimising the write stream for only dif

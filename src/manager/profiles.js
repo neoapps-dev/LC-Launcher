@@ -7,9 +7,18 @@ import { pckFormat, PCKAssetType } from "../utils/pckFormat.js";
 export class Profiles {
     constructor(manager) {
         this.manager = manager;
+        this._profilesCache = new Map();
+        this._listCache = null;
     };
 
-    async list() {
+    invalidateCache() {
+        this._listCache = null;
+        this._profilesCache.clear();
+    };
+
+    async list(forceRefresh = false) {
+        if (!forceRefresh && this._listCache !== null) return this._listCache;
+
         try {
             // reading in chunks to fix linux webkitgtk issue where it cant read more than about 2mb due to the websocket message size limit
             const profilesContent = await Filesystem.readStream(this.manager.profilesFile);
@@ -17,16 +26,30 @@ export class Profiles {
             console.log(`Profiles fetched with content ${profilesContent?.length || "0"}`);
 
             if (!profilesContent) throw new Error("File not readable");
-            return JSON.parse(profilesContent);
+            const profiles = JSON.parse(profilesContent);
+
+            this._listCache = profiles;
+            this._profilesCache.clear();
+            for (const p of profiles) {
+                if (p?.id) this._profilesCache.set(p.id, p);
+            };
+
+            return profiles;
         } catch(e) {
             console.error(`Error fetching profiles`, e);
             return [];
         };
     };
 
-    async get(id) {
-        const profiles = await this.list();
-        return profiles.find(p => p.id === id);
+    async get(id, forceRefresh = false) {
+        if (!id) return null;
+
+        if (!forceRefresh && this._profilesCache.has(id)) return this._profilesCache.get(id);
+
+        const profiles = await this.list(forceRefresh);
+        const profile = profiles.find(p => p.id === id) || null;
+        if (profile) this._profilesCache.set(id, profile);
+        return profile;
     };
 
     async create({ username, skin, uid = this.manager.utils.generateUID(), type = "OFFLINE" }) {
@@ -50,49 +73,59 @@ export class Profiles {
         };
 
         profiles.push(profile);
-        await this.manager.utils.writeJSON(this.manager.profilesFile, profiles);
+        await Filesystem.writeJSONStream(this.manager.profilesFile, profiles);
+        this.invalidateCache();
 
         return profile;
     };
 
     async edit(id, prop, value) {
-        const profiles = await this.list();
+        const currentProfile = await this.get(id);
+        if (!currentProfile) return "Profile not found";
 
-        const profile = profiles.find(p => p.id === id);
-        if (!profile) return "Profile not found";
-        profile[prop] = value;
+        if (currentProfile[prop] === value) return;
 
-        await this.manager.utils.writeJSON(this.manager.profilesFile, profiles);
+        const diff = { [prop]: value };
+        await Filesystem.writeJSONStream(this.manager.profilesFile, diff, id);
+        this.invalidateCache();
     };
 
     async update(id, updates = {}) {
-        const profiles = await this.list();
-        const index = profiles.findIndex(p => p.id === id);
-        
-        if (index === -1) throw new Error("Profile not found");
+        const currentProfile = await this.get(id);
+        if (!currentProfile) throw new Error("Profile not found");
 
-        const profile = profiles[index];
-        if (updates.username) profile.username = updates.username;
-        if (updates.skin) {
+        const diff = {};
+        if (updates.username !== undefined && updates.username !== currentProfile.username)
+            diff.username = updates.username;
+        if (updates.uid !== undefined && updates.uid !== currentProfile.uid)
+            diff.uid = updates.uid;
+        if (updates.type !== undefined && updates.type !== currentProfile.type)
+            diff.type = updates.type;
+        if (updates.cape !== undefined && updates.cape !== currentProfile.cape)
+            diff.cape = updates.cape;
+
+        if (updates.skin && updates.skin !== currentProfile.skin) {
             const [skinDataURI, skin64x64DataURI, isSlim, skinRenderDataURI] = await this.manager.skins.process(updates.skin);
-            profile.skin = skinDataURI;
-            profile.skin64x64 = skin64x64DataURI || null;
-            profile.skinRender = skinRenderDataURI;
-            profile.isSlim = isSlim || false;
+            diff.skin = skinDataURI;
+            diff.skin64x64 = skin64x64DataURI || null;
+            diff.skinRender = skinRenderDataURI;
+            diff.isSlim = isSlim || false;
         };
-        if (updates.uid) profile.uid = updates.uid;
 
-        profiles[index] = profile;
-        await this.manager.utils.writeJSON(this.manager.profilesFile, profiles);
+        if (Object.keys(diff).length === 0) return currentProfile;
 
-        return profile;
+        await Filesystem.writeJSONStream(this.manager.profilesFile, diff, id);
+        this.invalidateCache();
+
+        return { ...currentProfile, ...diff };
     };
 
     async delete(id) {
         let profiles = await this.list();
         profiles = profiles.filter(p => p.id !== id);
 
-        await this.manager.utils.writeJSON(this.manager.profilesFile, profiles);
+        await Filesystem.writeJSONStream(this.manager.profilesFile, profiles);
+        this.invalidateCache();
     };
 
     async export(id) {
@@ -113,10 +146,7 @@ export class Profiles {
         const saveFinal = savePath.trim();
         if (!saveFinal.endsWith(".lceprofile.json")) return showToast("You must save as a .lceprofile.json file");
 
-        if (saveFinal) {
-            await this.manager.utils.writeJSON(saveFinal, sterilisedData);
-            return true;
-        };
+        await Filesystem.writeJSONStream(saveFinal, sterilisedData);
         return true;
     };
 
@@ -182,9 +212,8 @@ export class Profiles {
     };
 
     async readInstanceFiles(id, instanceId) {
-        const profiles = await this.list();
-        const index = profiles.findIndex(p => p.id === id);
-        if (index === -1) throw new Error("Profile not found");
+        const currentProfile = await this.get(id);
+        if (!currentProfile) throw new Error("Profile not found");
 
         const contentDir = await Neutralino.filesystem.getJoinedPath(this.manager.instancesDir, instanceId, "content");
 
@@ -197,17 +226,18 @@ export class Profiles {
             };
         };
 
-        if (!profiles[index].instanceFiles) profiles[index].instanceFiles = {};
-    
         const files = {};
         for (const filename of this.manager.profileInstanceFiles)
             files[filename] = await readProfileRead(filename);
 
-        profiles[index].instanceFiles[instanceId] = files;
+        const updatedInstanceFiles = {
+            ...(currentProfile.instanceFiles || {}),
+            [instanceId]: files
+        };
 
-        await Filesystem.writeStream(this.manager.profilesFile, profiles);
-        //await this.manager.utils.writeJSON(this.manager.profilesFile, profiles);
-        console.log("Profile Instance Files saved to:", this.manager.profilesFile, profiles);
+        await Filesystem.writeJSONStream(this.manager.profilesFile, { instanceFiles: updatedInstanceFiles }, id);
+        this.invalidateCache();
+        console.log("Profile Instance Files saved to:", this.manager.profilesFile, updatedInstanceFiles);
     };
 
     async writeInstanceFiles(id, instanceId) {
@@ -239,12 +269,21 @@ export class Profiles {
 
     async removeInstanceFiles(instanceId) {
         const profiles = await this.list();
-        
-        for (const profile of profiles)
-            if (profile.instanceFiles?.[instanceId]) delete profile.instanceFiles[instanceId];
+        let modified = false;
 
-        await Filesystem.writeStream(this.manager.profilesFile, profiles);
-        //await this.manager.utils.writeJSON(this.manager.profilesFile, profiles);
+        const updatedProfiles = profiles.map(profile => {
+            if (profile.instanceFiles?.[instanceId]) {
+                modified = true;
+                const { [instanceId]: _, ...remainingInstanceFiles } = profile.instanceFiles;
+                return { ...profile, instanceFiles: remainingInstanceFiles };
+            };
+            return profile;
+        });
+
+        if (modified) {
+            await Filesystem.writeJSONStream(this.manager.profilesFile, updatedProfiles);
+            this.invalidateCache();
+        };
     };
 
     async packDLC(id, instanceId) {
@@ -312,7 +351,6 @@ export class Profiles {
                     copyFlipped(52, 20, 4, 12, 44, 52);
 
                     const dataUrl = canvas.toDataURL("image/png");
-                    console.log(dataUrl)
                     const res = await fetch(dataUrl);
                     const buffer = await res.arrayBuffer();
                     resolve(buffer);
