@@ -59,8 +59,44 @@ export default class Filesystem {
         return await Filesystem.writeStreamEnd(streamID);
     };
 
-    static async writeJSONStream(targetPath, diffObj) {
-        return await lib.run(null, 'filesystem', 'writeJSONStream', targetPath, diffObj);
+    static async writeJSONStreamStart(streamID, targetPath) {
+        return await lib.run(null, 'filesystem', 'writeJSONStreamStart', {
+            streamID,
+            targetPath
+        });
+    };
+
+    static async writeJSONStreamChunk(streamID, data, isBase64 = false) {
+        return await lib.run(null, 'filesystem', 'writeJSONStreamChunk', {
+            streamID,
+            data,
+            isBase64
+        });
+    };
+
+    static async writeJSONStreamEnd(streamID) {
+        return await lib.run(null, 'filesystem', 'writeJSONStreamEnd', { streamID });
+    };
+
+    static async writeJSONStream(targetPath, diffObj, delayMs = 10) {
+        const streamID = crypto.randomUUID();
+        const jsonString = typeof diffObj === "string" ? diffObj : JSON.stringify(diffObj);
+        const CHUNK_SIZE = 32 * 1024; // 32 kb
+
+        await Filesystem.writeJSONStreamStart(streamID, targetPath);
+        await sleep(15);
+
+        let offset = 0;
+        while (offset < jsonString.length) {
+            const chunk = jsonString.slice(offset, offset + CHUNK_SIZE);
+            await Filesystem.writeJSONStreamChunk(streamID, chunk, false);
+            offset += CHUNK_SIZE;
+
+            if (offset < jsonString.length && delayMs > 0) await sleep(delayMs);
+        };
+
+        await sleep(15);
+        return await Filesystem.writeJSONStreamEnd(streamID);
     };
 
     static async readStream(targetPath, chunkSize = 32 * 1024, asBase64 = false, delayMs = 10) {

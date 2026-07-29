@@ -73,7 +73,7 @@ export class Profiles {
         };
 
         profiles.push(profile);
-        await Filesystem.writeJSONStream(this.manager.profilesFile, profiles);
+        await Filesystem.writeStream(this.manager.profilesFile, profiles);
         this.invalidateCache();
 
         return profile;
@@ -85,8 +85,8 @@ export class Profiles {
 
         if (currentProfile[prop] === value) return;
 
-        const diff = { [prop]: value };
-        await Filesystem.writeJSONStream(this.manager.profilesFile, diff, id);
+        const diff = { id, [prop]: value };
+        await Filesystem.writeJSONStream(this.manager.profilesFile, [diff], id);
         this.invalidateCache();
     };
 
@@ -94,7 +94,7 @@ export class Profiles {
         const currentProfile = await this.get(id);
         if (!currentProfile) throw new Error("Profile not found");
 
-        const diff = {};
+        const diff = { id };
         if (updates.username !== undefined && updates.username !== currentProfile.username)
             diff.username = updates.username;
         if (updates.uid !== undefined && updates.uid !== currentProfile.uid)
@@ -114,7 +114,7 @@ export class Profiles {
 
         if (Object.keys(diff).length === 0) return currentProfile;
 
-        await Filesystem.writeJSONStream(this.manager.profilesFile, diff, id);
+        await Filesystem.writeJSONStream(this.manager.profilesFile, [diff], id);
         this.invalidateCache();
 
         return { ...currentProfile, ...diff };
@@ -124,7 +124,7 @@ export class Profiles {
         let profiles = await this.list();
         profiles = profiles.filter(p => p.id !== id);
 
-        await Filesystem.writeJSONStream(this.manager.profilesFile, profiles);
+        await Filesystem.writeStream(this.manager.profilesFile, profiles);
         this.invalidateCache();
     };
 
@@ -146,7 +146,7 @@ export class Profiles {
         const saveFinal = savePath.trim();
         if (!saveFinal.endsWith(".lceprofile.json")) return showToast("You must save as a .lceprofile.json file");
 
-        await Filesystem.writeJSONStream(saveFinal, sterilisedData);
+        await Filesystem.writeStream(saveFinal, sterilisedData);
         return true;
     };
 
@@ -235,7 +235,7 @@ export class Profiles {
             [instanceId]: files
         };
 
-        await Filesystem.writeJSONStream(this.manager.profilesFile, { instanceFiles: updatedInstanceFiles }, id);
+        await Filesystem.writeJSONStream(this.manager.profilesFile, [{ id, instanceFiles: updatedInstanceFiles }], id);
         this.invalidateCache();
         console.log("Profile Instance Files saved to:", this.manager.profilesFile, updatedInstanceFiles);
     };
@@ -281,7 +281,7 @@ export class Profiles {
         });
 
         if (modified) {
-            await Filesystem.writeJSONStream(this.manager.profilesFile, updatedProfiles);
+            await Filesystem.writeStream(this.manager.profilesFile, updatedProfiles);
             this.invalidateCache();
         };
     };

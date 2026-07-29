@@ -21,11 +21,26 @@
     gap: 15px;
 }
 
-#create-profile > h2 {
+#create-profile h2 {
     font: 14px 'Minecraftia', sans-serif;
     text-shadow: 2px 2px #000A;
 
     color: #b6b6b6;
+}
+
+.create-profile-columns {
+    display: flex;
+    flex-direction: row;
+    gap: 30px;
+    width: 100%;
+}
+
+.create-profile-columns .column-left,
+.create-profile-columns .column-right {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    flex: 1;
 }
 
 #create-profile-action-bar {

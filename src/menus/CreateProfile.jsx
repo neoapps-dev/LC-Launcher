@@ -35,6 +35,10 @@ export default function CreateProfileMenu({ setMenu, setProfile, reloadData }) {
         });
     };
 
+    const handleCapes = async () => {
+
+    };
+
     const handleCreate = async () => {
         if (!ready) return showToast("You need to enter a valid username");
 
@@ -123,121 +127,128 @@ export default function CreateProfileMenu({ setMenu, setProfile, reloadData }) {
                 {processing ? (
                     <h2>Creating your profile...</h2>
                 ) : (
-                    <>
-                        <Textbox
-                            id="chosen-username"
-                            onchange={async (txt) => {
-                                if (txt.trim() === "") return setReady(false);
-                                if (!(/^[a-zA-Z0-9_]{3,16}$/.test(txt.trim()))) {
-                                    showToast("Your username must only have letters, numbers");
-                                    return setReady(false);
-                                };
-                                setUsername(txt.trim());
-                                setReady(true);
-                            }}
-                            value={username}
-                            placeholder="Steve..."
-                            label="Enter your username"
-                            minlength={3}
-                            maxlength={16}
-                        />
-                        <Select
-                            label="Skin Mode"
-                            value={skinMode}
-                            options={[
-                                { label: "File", value: "file" },
-                                { label: "Java Skin", value: "java" },
-                                { label: "Bedrock Skin", value: "bedrock" }
-                            ]}
-                            onChange={(val) => setSkinMode(val)}
-                        />
-                        {skinMode === "file" ? (
-                            <>
-                                <div id="skin-box">
-                                    <Textbox
-                                        id="skin-path"
-                                        onchange={async (txt) => {
-                                            if (txt.trim() === "") return setSkin(undefined);
+                    <div className="create-profile-columns">
+                        <div className="column-left">
+                            <Textbox
+                                id="chosen-username"
+                                onchange={async (txt) => {
+                                    if (txt.trim() === "") return setReady(false);
+                                    if (!(/^[a-zA-Z0-9_]{3,16}$/.test(txt.trim()))) {
+                                        showToast("Your username must only have letters, numbers");
+                                        return setReady(false);
+                                    };
+                                    setUsername(txt.trim());
+                                    setReady(true);
+                                }}
+                                value={username}
+                                placeholder="Steve..."
+                                label="Enter your username"
+                                minlength={3}
+                                maxlength={16}
+                            />
 
-                                            if (!(await testPath(txt))) {
-                                                showToast("Couldn't find skin from path");
-                                                return setSkin(undefined);
-                                            };
+                            <Textbox
+                                id="chosen-uid"
+                                onchange={async (txt) => {
+                                    if (txt.trim() === "") return setUID("");
+                                    if (!(/^0x[0-9A-F]{16}$/i.test(txt.trim()))) {
+                                        showToast("Invalid UID Format");
+                                        return setUID("");
+                                    };
+                                    setUID(txt.trim());
+                                }}
+                                value={UID}
+                                placeholder="0xC1B71FF5E39BB126..."
+                                label="Enter a UID (Optional)"
+                                minlength={18}
+                                maxlength={18}
+                            />
+                        </div>
+                        <div className="column-right">
+                            <Select
+                                label="Skin Mode"
+                                value={skinMode}
+                                options={[
+                                    { label: "File", value: "file" },
+                                    { label: "Java Skin", value: "java" },
+                                    { label: "Bedrock Skin", value: "bedrock" }
+                                ]}
+                                onChange={(val) => setSkinMode(val)}
+                            />
+                            {skinMode === "file" ? (
+                                <>
+                                    <div id="skin-box">
+                                        <Textbox
+                                            id="skin-path"
+                                            onchange={async (txt) => {
+                                                if (txt.trim() === "") return setSkin(undefined);
 
-                                            if (!txt.endsWith(".jpg") &&
-                                                !txt.endsWith(".jpeg") &&
-                                                !txt.endsWith(".png")) {
-                                                setSkin(undefined);
-                                                return showToast("Please select a valid skin file");
-                                            };
+                                                if (!(await testPath(txt))) {
+                                                    showToast("Couldn't find skin from path");
+                                                    return setSkin(undefined);
+                                                };
 
-                                            //check if its a skin
-                                            const buff = await Neutralino.filesystem.readBinaryFile(txt);
-                                            if (!(await Manager.skins.isSkin(buff))) {
-                                                setSkin(undefined);
-                                                return showToast("The file you specified wasn't a valid skin file");
-                                            };
+                                                if (!txt.endsWith(".jpg") &&
+                                                    !txt.endsWith(".jpeg") &&
+                                                    !txt.endsWith(".png")) {
+                                                    setSkin(undefined);
+                                                    return showToast("Please select a valid skin file");
+                                                };
 
-                                            setSkin(txt.trim());
-                                        }}
-                                        value={skin}
-                                        placeholder="Skin path..."
-                                        label="Enter your skin's path"
-                                        minlength={3}
-                                        maxlength={150}
-                                        isFilePicker={true}
-                                        onPick={async () => {
-                                            const res = await Neutralino.os.showOpenDialog(
-                                                "Select a skin",
-                                                {
-                                                    multiSelections: false,
-                                                    filters: [
-                                                        {name: 'Images', extensions: ['png']},
-                                                    ]
-                                                }
-                                            );
-                                            if (!res || res.length === 0) return;
-                                            const src = res[0].trim();
-                                            if (!src.endsWith(".png"))
-                                                return showToast("Please select a valid skin file"); // extra check as sometimes a file explorer bypasses filter
+                                                //check if its a skin
+                                                const buff = await Neutralino.filesystem.readBinaryFile(txt);
+                                                if (!(await Manager.skins.isSkin(buff))) {
+                                                    setSkin(undefined);
+                                                    return showToast("The file you specified wasn't a valid skin file");
+                                                };
 
-                                            if (!(await testPath(src))) 
-                                                return showToast("Couldn't find skin from path");
-                                            
-                                            //check if its a skin
-                                            const buff = await Neutralino.filesystem.readBinaryFile(src);
-                                            if (!(await Manager.skins.isSkin(buff)))
-                                                return showToast("The file you specified wasn't a valid skin file");
+                                                setSkin(txt.trim());
+                                            }}
+                                            value={skin}
+                                            placeholder="Skin path..."
+                                            label="Enter your skin's path"
+                                            minlength={3}
+                                            maxlength={150}
+                                            isFilePicker={true}
+                                            onPick={async () => {
+                                                const res = await Neutralino.os.showOpenDialog(
+                                                    "Select a skin",
+                                                    {
+                                                        multiSelections: false,
+                                                        filters: [
+                                                            {name: 'Images', extensions: ['png']},
+                                                        ]
+                                                    }
+                                                );
+                                                if (!res || res.length === 0) return;
+                                                const src = res[0].trim();
+                                                if (!src.endsWith(".png"))
+                                                    return showToast("Please select a valid skin file"); // extra check as sometimes a file explorer bypasses filter
 
-                                            setSkin(src);
-                                        }}
-                                    />
-                                </div>
-                                <h2>Your skin will default to steve if you don't select one.</h2>
-                            </>
-                        ) : (skinMode === "java" ? (
-                            <h2>Will use <b>{username || "Steve"}</b>'s Java Edition skin</h2>
-                        ) : (
-                            <h2>Will use <b>{username || "Steve"}</b>'s Bedrock Edition skin</h2>
-                        ))}
+                                                if (!(await testPath(src))) 
+                                                    return showToast("Couldn't find skin from path");
+                                                
+                                                //check if its a skin
+                                                const buff = await Neutralino.filesystem.readBinaryFile(src);
+                                                if (!(await Manager.skins.isSkin(buff)))
+                                                    return showToast("The file you specified wasn't a valid skin file");
 
-                        <Textbox
-                            id="chosen-uid"
-                            onchange={async (txt) => {
-                                if (txt.trim() === "") return setUID("");
-                                if (!(/^0x[0-9A-F]{16}$/i.test(txt.trim()))) {
-                                    showToast("Invalid UID Format");
-                                    return setUID("");
-                                };
-                                setUID(txt.trim());
-                            }}
-                            value={UID}
-                            placeholder="0xC1B71FF5E39BB126..."
-                            label="Enter a UID (Optional)"
-                            minlength={18}
-                            maxlength={18}
-                        />
-                    </>
+                                                setSkin(src);
+                                            }}
+                                        />
+                                    </div>
+                                    <Button disabled={processing} pushable={!processing} onclick={handleCapes}>
+                                        Capes
+                                    </Button>
+                                    <h2>Your skin will default to steve if you don't select one.</h2>
+                                </>
+                            ) : (skinMode === "java" ? (
+                                <h2>Will use <b>{username || "Steve"}</b>'s Java Edition skin</h2>
+                            ) : (
+                                <h2>Will use <b>{username || "Steve"}</b>'s Bedrock Edition skin</h2>
+                            ))}
+                        </div>
+                    </div>
                 )}
             </div>
             <div id="create-profile-action-bar">

@@ -8,6 +8,7 @@ const { pipeline } = require('node:stream/promises');
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const activeWriteStreams = new Map();
+const activeJSONBuffers = new Map();
 
 class Filesystem {
     static async readStream(callID, ext, config) {
@@ -94,31 +95,142 @@ class Filesystem {
         });
     };
 
-    static async writeJSONStream(callID, ext, targetPath, diff = {}) {
-        if (Object.keys(diff).length === 0) return;
+    static async writeJSONStreamStart(callID, ext, config) {
+        const { streamID, targetPath } = config;
+        
+        fs.mkdirSync(path.dirname(targetPath), { recursive: true });
 
-        let fullData = {};
+        activeJSONBuffers.set(streamID, {
+            targetPath,
+            chunks: []
+        });
 
-        if (fs.existsSync(targetPath)) {
-            try {
-                const raw = await fs.promises.readFile(targetPath, 'utf-8');
-                fullData = JSON.parse(raw);
-            } catch (err) {
-                console.warn(`Failed to parse ${targetPath}, writing new obj`, err);
-                fullData = {};
+        return { success: true, streamID };
+    };
+
+    static async writeJSONStreamChunk(callID, ext, config) {
+        const { streamID, data, isBase64 = false } = config;
+
+        const session = activeJSONBuffers.get(streamID);
+        if (!session) throw new Error(`JSON Stream not found: ${streamID}`);
+
+        const buffer = isBase64 ? Buffer.from(data, 'base64') : (typeof data === 'string' ? Buffer.from(data, 'utf8') : data);
+        session.chunks.push(buffer);
+
+        return { success: true };
+    };
+
+    static async writeJSONStreamEnd(callID, ext, config) {
+        const { streamID } = config;
+
+        const session = activeJSONBuffers.get(streamID);
+        if (!session) throw new Error(`JSON Stream not found: ${streamID}`);
+
+        const { targetPath, chunks } = session;
+
+        try {
+            const diffRaw = Buffer.concat(chunks).toString('utf-8');
+            const diff = diffRaw.trim() ? JSON.parse(diffRaw) : {};
+
+            if (Object.keys(diff).length === 0) {
+                activeJSONBuffers.delete(streamID);
+                return { success: true, targetPath };
+            };
+
+            let existingData = Array.isArray(diff) ? [] : {};
+            if (fs.existsSync(targetPath)) existingData = await Filesystem._readJSONFileStreamed(targetPath);
+
+            const mergedData = Filesystem._mergeIDs(existingData, diff)
+
+            const tempPath = `${targetPath}.tmp.${Date.now()}`;
+            const writeStream = fs.createWriteStream(tempPath, { flags: 'w' });
+
+            const jsonString = JSON.stringify(mergedData, null, 2);
+            const readStream = fs.ReadStream.from([jsonString]);
+
+            await pipeline(readStream, writeStream);
+            await fs.promises.rename(tempPath, targetPath);
+
+            return { success: true, targetPath };
+        } finally {
+            activeJSONBuffers.delete(streamID);
+        };
+    };
+
+    static _mergeIDs(target, source) {
+        if (typeof target !== 'object' || target === null) return source;
+        if (typeof source !== 'object' || source === null) return target;
+
+        if (Array.isArray(target) || Array.isArray(source)) {
+            const targetArr = Array.isArray(target) ? target : [];
+            const sourceArr = Array.isArray(source) ? source : [];
+
+            const map = new Map();
+
+            targetArr.forEach((item, index) => {
+                const keyId = item && typeof item === 'object' && 'id' in item ? item.id : index;
+                map.set(keyId, item);
+            });
+
+            sourceArr.forEach((item, index) => {
+                const keyId = item && typeof item === 'object' && 'id' in item ? item.id : index;
+                if (map.has(keyId)) {
+                    const existingItem = map.get(keyId);
+                    if (typeof existingItem === 'object' && typeof item === 'object' && existingItem !== null && item !== null) {
+                        map.set(keyId, Filesystem._mergeIDs(existingItem, item));
+                    } else {
+                        map.set(keyId, item);
+                    };
+                } else {
+                    map.set(keyId, item);
+                };
+            });
+
+            return Array.from(map.values());
+        };
+
+        const output = { ...target };
+
+        for (const key of Object.keys(source)) {
+            const targetVal = target[key];
+            const sourceVal = source[key];
+
+            if (Array.isArray(targetVal) && Array.isArray(sourceVal)) {
+                output[key] = Filesystem._mergeIDs(targetVal, sourceVal);
+            } else if (
+                typeof targetVal === 'object' && targetVal !== null &&
+                typeof sourceVal === 'object' && sourceVal !== null
+            ) {
+                output[key] = Filesystem._mergeIDs(targetVal, sourceVal);
+            } else {
+                output[key] = sourceVal;
             };
         };
 
-        Object.assign(fullData, diff);
+        return output;
+    };
 
-        const jsonString = JSON.stringify(fullData, null, 2);
-        const readStream = fs.ReadStream.from([jsonString]);
-        
-        const writeStream = fs.createWriteStream(targetPath, { flags: 'w' });
+    static _readJSONFileStreamed(filePath) {
+        return new Promise((resolve) => {
+            let result = {};
+            const readStream = fs.createReadStream(filePath);
 
-        await pipeline(readStream, writeStream);
-
-        return fullData;
+            let buffer = '';
+            readStream.on('data', (chunk) => buffer += chunk.toString('utf-8'));
+            readStream.on('end', () => {
+                try {
+                    result = JSON.parse(buffer);
+                } catch (err) {
+                    console.warn(`Failed to parse ${filePath}, starting fresh.`, err);
+                    result = {};
+                };
+                resolve(result);
+            });
+            readStream.on('error', (err) => {
+                console.warn(`Error streaming ${filePath}, starting fresh.`, err);
+                resolve({});
+            });
+        });
     };
 
     static async unzip(callID, ext, config) {
@@ -311,6 +423,7 @@ process.on('exit', () => {
     };
 
     activeWriteStreams.clear();
+    activeJSONBuffers.clear();
 });
 
 module.exports = Filesystem;

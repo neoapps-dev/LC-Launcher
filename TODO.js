@@ -18,6 +18,7 @@
 //+ TODO add more detailed playtime so when u click on it in bottom corner it opens up and shows usage sessions, eg. 50 mins here 20 mins there.
 //+ TODO fix the auto update to update libs also
 
+// DONE BELOW
 //+ TODO bundle zenity and fix local library paths
 //+ TODO add option to toggle panoramas
 //+ TODO fix the java and bedrock skin fetch as the api went down
