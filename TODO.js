@@ -2,7 +2,7 @@
 //- TODO make instances appear as games in steam
 //* TODO add dev tools like .arc .pak and .loc editor
 //* TODO make each profile have multiple skins
-//* TODO add friend, chat and join game system (maybe compatible with emerald launcher)
+//* TODO add friend, chat and join game system (maybe compatible with emerald launcher) (use that rounded gray breathing colour boxes as placeholders) (have a rlly cool eligant login animation)
 //* TODO add LCE Workshop and make a good website for it
 // TODO make worlds menu work
 // TODO add a corrupted installation fix menu
