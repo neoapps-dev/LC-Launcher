@@ -29,6 +29,7 @@ export default defineConfig({
                         return "vendor";
                     } else {
                         if (id.includes("defaultInstances.js")) return "instances";
+                        if (id.includes("logger.js")) return "logger";
                     };
                 }
             }
