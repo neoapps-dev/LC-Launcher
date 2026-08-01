@@ -19,7 +19,7 @@ export default class Unzip {
     };
 
     async start() {
-        this.status = "extracting";
+        this.status = "starting";
         this.progress = 0;
         this.emit();
 
@@ -30,6 +30,7 @@ export default class Unzip {
                 if (packet.callID !== this.id) return;
 
                 this.progress = packet.percent;
+                this.status = "extracting";
                 this.emit();
             };
 

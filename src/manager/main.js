@@ -10,6 +10,7 @@ import { Remotes } from "./remotes.js";
 import { Servers } from "./servers.js";
 import { Worlds } from "./worlds.js";
 import { Skins } from "./skins.js";
+import { Capes } from "./capes.js";
 import { Exec } from "./exec.js";
 import { Utils } from "./utils.js";
 import { API } from "./api.js";
@@ -30,6 +31,7 @@ export class Manager {
         this.servers = new Servers(this);
         this.worlds = new Worlds(this);
         this.skins = new Skins(this);
+        this.capes = new Capes(this);
         this.exec = new Exec(this);
         this.api = new API(config.apiDomain);
     };

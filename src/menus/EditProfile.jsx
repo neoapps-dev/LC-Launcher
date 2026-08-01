@@ -10,6 +10,7 @@ import { showAlert } from "../components/Alert.jsx";
 import Button from "../components/Button.jsx";
 import Textbox from "../components/Textbox.jsx";
 import Select from "../components/Select.jsx";
+import Capes from "../components/Capes.jsx";
 
 import closeIcon from "../assets/buttons/close.svg";
 
@@ -22,20 +23,21 @@ export default function EditProfileMenu({ setMenu, profile, setProfile, reloadDa
     const [UID, setUID] = useState("");
     const [skin, setSkin] = useState(undefined);
     const [skinMode, setSkinMode] = useState("file");
+    const [cape, setCape] = useState(undefined);
+    const [showCapeMenu, setShowCapeMenu] = useState(false);
 
     useEffect(() => {
-        if (profile) setUsername(profile.username);
-        if (profile) setUID(profile.uid);
+        if (profile) {
+            setUsername(profile.username);
+            setUID(profile.uid);
+            if (profile.cape) setCape(profile.cape);
+        };
     }, [profile]);
 
     const handleNewUID = () => {
         const newUid = Manager.utils.generateUID(); 
         setUID(newUid);
         showToast("Generated new UID");
-    };
-
-    const handleCapes = async () => {
-
     };
 
     const handleExport = async () => {
@@ -113,12 +115,10 @@ export default function EditProfileMenu({ setMenu, profile, setProfile, reloadDa
                 showToast("Fetching Bedrock Edition skin...");
                 try {
                     const geyserRes = await Net.get(`https://api.geysermc.org/v2/xbox/xuid/${username}`);
-                    console.log(geyserRes)
                     if (!geyserRes.ok || !geyserRes.data?.xuid) throw new Error("Bedrock user not found");
 
                     const xuid = geyserRes.data.xuid;
                     const skinRes = await Net.get(`https://api.geysermc.org/v2/skin/${xuid}`);
-                    console.log(skinRes)
                     if (!skinRes.ok || !skinRes.data?.is_steve) {
                         const skinUrl = `https://api.geysermc.org/v2/skin/${xuid}/texture`;
                         skinDataURI = await fetchDataURI(skinUrl);
@@ -133,7 +133,8 @@ export default function EditProfileMenu({ setMenu, profile, setProfile, reloadDa
             const updatedProfile = await Manager.profiles.update(profile.id, {
                 username,
                 uid: UID !== "" ? UID : undefined,
-                ...(skinDataURI && { skin: skinDataURI })
+                ...(skinDataURI && { skin: skinDataURI }),
+                cape: cape !== undefined ? cape : null
             });
 
             await reloadData();
@@ -141,10 +142,15 @@ export default function EditProfileMenu({ setMenu, profile, setProfile, reloadDa
             setMenu('main');
         } catch (err) {
             console.error(err);
-            showToast("Failed to create profile: " + err.message);
+            showToast("Failed to edit profile: " + err.message);
         } finally {
             setProcessing(false);
         };
+    };
+
+    const handleBack = () => {
+        if (showCapeMenu) setShowCapeMenu(false);
+        else setMenu('main');
     };
 
     async function testPath(path) {
@@ -159,9 +165,9 @@ export default function EditProfileMenu({ setMenu, profile, setProfile, reloadDa
     return (
         <>
             <div id="top-bar">
-                <h1>Edit Profile</h1>
+                <h1 id="edit-profile-title">Edit Profile{showCapeMenu ? " - Capes" : ""}</h1>
                 <div id="main-actions">
-                    <Button id="back-button" onclick={() => setMenu('main')}>
+                    <Button id="back-button" onclick={handleBack} tooltip={showCapeMenu ? "Close Capes" : "Close"}>
                         <img id="back-icon" src={closeIcon} draggable={false} />
                     </Button>
                 </div>
@@ -169,6 +175,8 @@ export default function EditProfileMenu({ setMenu, profile, setProfile, reloadDa
             <div id="edit-profile">
                 {processing ? (
                     <h2>Saving profile changes...</h2>
+                ) : showCapeMenu ? (
+                    <Capes setShowCapeMenu={setShowCapeMenu} cape={cape} setCape={setCape} profile={profile} />
                 ) : (
                     <div className="edit-profile-columns">
                         <div className="column-left">
@@ -280,8 +288,8 @@ export default function EditProfileMenu({ setMenu, profile, setProfile, reloadDa
                                             }}
                                         />
                                     </div>
-                                    <Button disabled={processing} pushable={!processing} onclick={handleCapes}>
-                                        Capes
+                                    <Button disabled={processing} pushable={!processing} onclick={() => setShowCapeMenu(true)}>
+                                        {cape ? "Cape Selected (Change)" : "Capes"}
                                     </Button>
                                     <h2>Your skin will default to steve if you don't select one.</h2>
                                 </>
@@ -294,24 +302,26 @@ export default function EditProfileMenu({ setMenu, profile, setProfile, reloadDa
                     </div>
                 )}
             </div>
-            <div id="edit-profile-action-bar">
-                <div id="profile-action-bar-group">
-                    <Button id="delete-button" type="destructive" disabled={processing} pushable={!processing} onclick={handleDelete}>
-                        Delete
-                    </Button>
-                    <Button type="destructive" disabled={processing} pushable={!processing} onclick={handleNewUID}>
-                        New UID
-                    </Button>
+            {!showCapeMenu &&
+                <div id="edit-profile-action-bar">
+                    <div id="profile-action-bar-group">
+                        <Button id="delete-button" type="destructive" disabled={processing} pushable={!processing} onclick={handleDelete}>
+                            Delete
+                        </Button>
+                        <Button type="destructive" disabled={processing } pushable={!processing} onclick={handleNewUID}>
+                            New UID
+                        </Button>
+                    </div>
+                    <div id="profile-action-bar-group">
+                        <Button disabled={processing || !ready} pushable={!processing && ready} onclick={handleExport}>
+                            Export
+                        </Button>
+                        <Button id="save-button" disabled={!ready || processing} pushable={ready && !processing} onclick={handleCreate}>
+                            Save
+                        </Button>
+                    </div>
                 </div>
-                <div id="profile-action-bar-group">
-                    <Button disabled={processing || !ready} pushable={!processing && ready} onclick={handleExport}>
-                        Export
-                    </Button>
-                    <Button id="save-button" disabled={!ready || processing} pushable={ready && !processing} onclick={handleCreate}>
-                        Save
-                    </Button>
-                </div>
-            </div>
+            }
         </>
     );
 };

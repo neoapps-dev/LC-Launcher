@@ -74,6 +74,9 @@ export default function OptionsMenu({ setMenu }) {
                 <Button onclick={() => updateSetting('renderPanorama', !settings.renderPanorama)}>
                     {settings.renderPanorama == false ? 'Render Panoramas: Disabled' : 'Render Panoramas: Enabled'}
                 </Button>
+                <Button onclick={() => updateSetting('renderBGFade', !settings.renderBGFade)}>
+                    {settings.renderBGFade == false ? 'Render BG Fade: Disabled' : 'Render BG Fade: Enabled'}
+                </Button>
                 <Button onclick={() => updateSetting('buttonClickSFX', !settings.buttonClickSFX)}>
                     {settings.buttonClickSFX == false ? 'Button Click SFX: Disabled' : 'Button Click SFX: Enabled'}
                 </Button>

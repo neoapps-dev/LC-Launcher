@@ -19,27 +19,32 @@ export default function SetupOptionsMenu({ setMenu }) {
                     </div>
                 </h1>
                 <h2>Setup options. You may edit these later as well!</h2>
-                <Button onclick={() => updateSetting('discordRPC', !settings.discordRPC)}>
-                    {settings.discordRPC == false ? 'Discord RPC: Disabled' : 'Discord RPC: Enabled'}
-                </Button>
-                <Button onclick={() => updateSetting('keepLauncherOpen', !settings.keepLauncherOpen)}>
-                    {settings.keepLauncherOpen == false ? 'Keep Launcher Open: Disabled' : 'Keep Launcher Open: Enabled'}
-                </Button>
-                <Button onclick={() => updateSetting('showFeaturedServers', !settings.showFeaturedServers)}>
-                    {settings.showFeaturedServers == false ? 'Show Featured Servers: Disabled' : 'Show Featured Servers: Enabled'}
-                </Button>
-                <Button onclick={() => updateSetting('renderPanorama', !settings.renderPanorama)}>
-                    {settings.renderPanorama == false ? 'Render Panoramas: Disabled' : 'Render Panoramas: Enabled'}
-                </Button>
-                <Button onclick={() => updateSetting('buttonClickSFX', !settings.buttonClickSFX)}>
-                    {settings.buttonClickSFX == false ? 'Button Click SFX: Disabled' : 'Button Click SFX: Enabled'}
-                </Button>
-                <Button onclick={() => updateSetting('menuMusic', !settings.menuMusic)}>
-                    {settings.menuMusic == false ? 'Menu Music: Disabled' : 'Menu Music: Enabled'}
-                </Button>
-                <Button onclick={() => updateSetting('menuMusicPanning', !settings.menuMusicPanning)}>
-                    {settings.menuMusicPanning == false ? 'Menu Music Panning: Disabled' : 'Menu Music Panning: Enabled'}
-                </Button>
+                <div id="setupOptionsContainer">
+                    <Button onclick={() => updateSetting('discordRPC', !settings.discordRPC)}>
+                        {settings.discordRPC == false ? 'Discord RPC: Disabled' : 'Discord RPC: Enabled'}
+                    </Button>
+                    <Button onclick={() => updateSetting('keepLauncherOpen', !settings.keepLauncherOpen)}>
+                        {settings.keepLauncherOpen == false ? 'Keep Launcher Open: Disabled' : 'Keep Launcher Open: Enabled'}
+                    </Button>
+                    <Button onclick={() => updateSetting('showFeaturedServers', !settings.showFeaturedServers)}>
+                        {settings.showFeaturedServers == false ? 'Show Featured Servers: Disabled' : 'Show Featured Servers: Enabled'}
+                    </Button>
+                    <Button onclick={() => updateSetting('renderPanorama', !settings.renderPanorama)}>
+                        {settings.renderPanorama == false ? 'Render Panoramas: Disabled' : 'Render Panoramas: Enabled'}
+                    </Button>
+                    <Button onclick={() => updateSetting('renderBGFade', !settings.renderBGFade)}>
+                        {settings.renderBGFade == false ? 'Render BG Fade: Disabled' : 'Render BG Fade: Enabled'}
+                    </Button>
+                    <Button onclick={() => updateSetting('buttonClickSFX', !settings.buttonClickSFX)}>
+                        {settings.buttonClickSFX == false ? 'Button Click SFX: Disabled' : 'Button Click SFX: Enabled'}
+                    </Button>
+                    <Button onclick={() => updateSetting('menuMusic', !settings.menuMusic)}>
+                        {settings.menuMusic == false ? 'Menu Music: Disabled' : 'Menu Music: Enabled'}
+                    </Button>
+                    <Button onclick={() => updateSetting('menuMusicPanning', !settings.menuMusicPanning)}>
+                        {settings.menuMusicPanning == false ? 'Menu Music Panning: Disabled' : 'Menu Music Panning: Enabled'}
+                    </Button>
+                </div>
             </div>
             <div id="setupOptions-action-bar">
                 <div></div>

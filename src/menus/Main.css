@@ -210,6 +210,24 @@
     transition: width 0.2s linear;
 }
 
+#progress-fill.indeterminate {
+    width: 40% !important;
+    position: absolute;
+    animation: indeterminate-slide 1.5s infinite ease-in-out;
+}
+
+@keyframes indeterminate-slide {
+    0% {
+        left: -40%;
+    }
+    50% {
+        left: 60%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
 #main-logo {
     transition: transform 0.5s ease, opacity 0.5s ease;
 }

@@ -52,7 +52,7 @@ export class Profiles {
         return profile;
     };
 
-    async create({ username, skin, uid = this.manager.utils.generateUID(), type = "OFFLINE" }) {
+    async create({ username, skin, cape = null, uid = this.manager.utils.generateUID(), type = "OFFLINE" }) {
         const profiles = await this.list();
 
         let skinDataURI, skin64x64DataURI, isSlim, skinRenderDataURI;
@@ -69,7 +69,7 @@ export class Profiles {
             skin64x64: skin64x64DataURI || null,
             skinRender: skinRenderDataURI,
             isSlim: isSlim || false,
-            cape: null
+            cape: cape
         };
 
         profiles.push(profile);

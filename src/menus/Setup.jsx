@@ -14,8 +14,10 @@ import Button from "../components/Button.jsx";
 import Textbox from "../components/Textbox.jsx";
 import Checkbox from "../components/Checkbox.jsx";
 import Select from "../components/Select.jsx";
+import Capes from "../components/Capes.jsx";
 
 import minecraftLogo from "../assets/ui/minecraftlogo.png";
+import closeIcon from "../assets/buttons/close.svg";
 
 import { defaultInstances } from "../data/defaultInstances.js";
 import Download from "../utils/download.js";
@@ -33,12 +35,20 @@ export default function SetupMenu({ setMenu, reloadData }) {
     const [UID, setUID] = useState("");
     const [skin, setSkin] = useState(undefined);
     const [skinMode, setSkinMode] = useState("file");
+    const [cape, setCape] = useState(undefined);
+    const [showCapeMenu, setShowCapeMenu] = useState(false);
     const [progress, setProgress] = useState({ active: false, label: '', percent: 0 });
+    const [openAnim, setOpenAnim] = useState(true);
 
     useEffect(() => {
         const handleProgress = (e) => setProgress(e.detail);
         window.addEventListener('installProgress', handleProgress);
         return () => window.removeEventListener('installProgress', handleProgress);
+    }, []);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setOpenAnim(false), 2000);
+        return () => clearTimeout(timer);
     }, []);
 
     useEffect(() => {
@@ -68,10 +78,6 @@ export default function SetupMenu({ setMenu, reloadData }) {
 
         checkRuntime();
     }, []);
-
-    const handleCapes = async () => {
-
-    };
 
     const makeDefaultInstances = async () => {
         for await (const inst of defaultInstances) {
@@ -110,7 +116,7 @@ export default function SetupMenu({ setMenu, reloadData }) {
     const handleNext = async () => {
         if (!ready) return showToast("You need to enter a valid username");
 
-        joinDiscordPrompt();
+        await joinDiscordPrompt();
         setProcessing(true);
         try {
             let skinDataURI = null;
@@ -156,10 +162,12 @@ export default function SetupMenu({ setMenu, reloadData }) {
                 };
             } else if (skin) skinDataURI = skin;
             
+            console.log("cape",cape)
             const newProfile = await Manager.profiles.create({
                 username,
                 skin: skinDataURI || undefined,
-                uid: UID !== "" ? UID : undefined
+                uid: UID !== "" ? UID : undefined,
+                cape: cape !== undefined ? cape : null
             });
 
             // make insts
@@ -193,29 +201,41 @@ export default function SetupMenu({ setMenu, reloadData }) {
     return (
         <>
             <img id="setup-logo" src={minecraftLogo} draggable={false} />
-            <div id="setup">
-                <h1 class="moto">Welcome to
-                    <div class="slidingVertical">
-                        <span>LC Launcher</span>
-                        <span>Legacy Community Launcher</span>
-                        <span>LCE Launcher</span>
-                    </div>
-                </h1>
+            <div id="setup" className={openAnim ? "animated" : ""}>
+                <div id="setup-top-bar">
+                    <h1 class="moto">Welcome to
+                        <div class="slidingVertical">
+                            <span>LC Launcher</span>
+                            <span>Legacy Community Launcher</span>
+                            <span>LCE Launcher</span>
+                        </div>
+                    </h1>
+                    {showCapeMenu &&
+                        <div id="main-actions">
+                            <Button id="back-button" onclick={() => setShowCapeMenu(false)} tooltip="Close Capes">
+                                <img id="back-icon" src={closeIcon} draggable={false} />
+                            </Button>
+                        </div>
+                    }
+                </div>
                 {processing ? (
                     <div id="setup-processing">
                         <h2>Setting up your launcher...</h2>
                         {progress.active ? (
-                            <div id="progress-container">
+                            <div id="setup-progress-container">
                                 <h2 id="progress-status">{progress.label} {progress.eta && `(${progress.eta})`}</h2>
                                 <div id="progress-bar">
                                     <div
                                         id="progress-fill"
+                                        className={progress.status === "starting" ? "indeterminate" : ""}
                                         style={{ width: `${progress.percent}%` }}
                                     />
                                 </div>
                             </div>
                         ) : ""}
                     </div>
+                ) : showCapeMenu ? (
+                    <Capes setShowCapeMenu={setShowCapeMenu} cape={cape} setCape={setCape} />
                 ) : (
                     <div className="setup-columns">
                         <div className="column-left">
@@ -340,8 +360,8 @@ export default function SetupMenu({ setMenu, reloadData }) {
                                             }}
                                         />
                                     </div>
-                                    <Button disabled={processing} pushable={!processing} onclick={handleCapes}>
-                                        Capes
+                                    <Button disabled={processing} pushable={!processing} onclick={() => setShowCapeMenu(true)}>
+                                        {cape ? "Cape Selected (Change)" : "Capes"}
                                     </Button>
                                     <h2>Your skin will default to steve if you don't select one.</h2>
                                 </>
@@ -354,18 +374,20 @@ export default function SetupMenu({ setMenu, reloadData }) {
                     </div>
                 )}
             </div>
-            <div id="setup-action-bar">
-                <Button id="skip-button" disabled={processing} pushable={!processing} onclick={async() => {
-                    await makeDefaultInstances(); // still want instances
-                    await updateSetting('hasSetup', true);
-                    setMenu('main');
-                }}>
-                    Skip Setup
-                </Button>
-                <Button id="done-button" disabled={!ready || processing} pushable={ready && !processing} onclick={handleNext}>
-                    Done
-                </Button>
-            </div>
+            {!showCapeMenu &&
+                <div id="setup-action-bar" className={openAnim ? "animated" : ""}>
+                    <Button id="skip-button" disabled={processing || showCapeMenu} pushable={!processing && !showCapeMenu} onclick={async() => {
+                        await makeDefaultInstances(); // still want instances
+                        await updateSetting('hasSetup', true);
+                        setMenu('main');
+                    }}>
+                        Skip Setup
+                    </Button>
+                    <Button id="done-button" disabled={!ready || processing || showCapeMenu} pushable={ready && !processing && !showCapeMenu} onclick={handleNext}>
+                        Done
+                    </Button>
+                </div>
+            }
         </>
     );
 };

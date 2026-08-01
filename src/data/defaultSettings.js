@@ -5,6 +5,7 @@ export const defaultSettings = {
     keepLauncherOpen: false,
     showFeaturedServers: true,
     renderPanorama: true,
+    renderBGFade: true,
     volume: 80,
     buttonClickSFX: false,
     menuMusic: false,

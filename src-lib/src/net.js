@@ -51,7 +51,12 @@ class Net {
 
         const { savePath } = config;
 
-        const response = await fetch(url, { method: 'GET' });
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                "User-Agent": "LC-Launcher"
+            }
+        });
         if (!response.ok) throw new Error(`HTTP Status: ${response.status}`);
 
         const totalBytes = parseInt(response.headers.get('content-length') || '0', 10);

@@ -9,6 +9,7 @@ import { showToast } from "../components/Toast.jsx";
 import Button from "../components/Button.jsx";
 import Textbox from "../components/Textbox.jsx";
 import Select from "../components/Select.jsx";
+import Capes from "../components/Capes.jsx";
 
 import closeIcon from "../assets/buttons/close.svg";
 
@@ -21,6 +22,8 @@ export default function CreateProfileMenu({ setMenu, setProfile, reloadData }) {
     const [UID, setUID] = useState("");
     const [skin, setSkin] = useState(undefined);
     const [skinMode, setSkinMode] = useState("file");
+    const [cape, setCape] = useState(undefined);
+    const [showCapeMenu, setShowCapeMenu] = useState(false);
 
     const fetchDataURI = async (imageUrl) => {
         const skinRes = await fetch(imageUrl);
@@ -33,10 +36,6 @@ export default function CreateProfileMenu({ setMenu, setProfile, reloadData }) {
             reader.onerror = reject;
             reader.readAsDataURL(skinBlob);
         });
-    };
-
-    const handleCapes = async () => {
-
     };
 
     const handleCreate = async () => {
@@ -90,7 +89,8 @@ export default function CreateProfileMenu({ setMenu, setProfile, reloadData }) {
             const newProfile = await Manager.profiles.create({
                 username,
                 skin: skinDataURI || undefined,
-                uid: UID !== "" ? UID : undefined
+                uid: UID !== "" ? UID : undefined,
+                cape: cape !== undefined ? cape : null
             });
 
             await reloadData();
@@ -102,6 +102,11 @@ export default function CreateProfileMenu({ setMenu, setProfile, reloadData }) {
         } finally {
             setProcessing(false);
         };
+    };
+
+    const handleBack = () => {
+        if (showCapeMenu) setShowCapeMenu(false);
+        else setMenu('main');
     };
 
     async function testPath(path) {
@@ -116,9 +121,9 @@ export default function CreateProfileMenu({ setMenu, setProfile, reloadData }) {
     return (
         <>
             <div id="top-bar">
-                <h1>Create Profile</h1>
+                <h1 id="create-profile-title">Create Profile{showCapeMenu ? " - Capes" : ""}</h1>
                 <div id="main-actions">
-                    <Button id="back-button" onclick={() => setMenu('main')}>
+                    <Button id="back-button" onclick={handleBack} tooltip={showCapeMenu ? "Close Capes" : "Close"}>
                         <img id="back-icon" src={closeIcon} draggable={false} />
                     </Button>
                 </div>
@@ -126,6 +131,8 @@ export default function CreateProfileMenu({ setMenu, setProfile, reloadData }) {
             <div id="create-profile">
                 {processing ? (
                     <h2>Creating your profile...</h2>
+                ) : showCapeMenu ? (
+                    <Capes setShowCapeMenu={setShowCapeMenu} cape={cape} setCape={setCape} />
                 ) : (
                     <div className="create-profile-columns">
                         <div className="column-left">
@@ -237,8 +244,8 @@ export default function CreateProfileMenu({ setMenu, setProfile, reloadData }) {
                                             }}
                                         />
                                     </div>
-                                    <Button disabled={processing} pushable={!processing} onclick={handleCapes}>
-                                        Capes
+                                    <Button disabled={processing} pushable={!processing} onclick={() => setShowCapeMenu(true)}>
+                                        {cape ? "Cape Selected (Change)" : "Capes"}
                                     </Button>
                                     <h2>Your skin will default to steve if you don't select one.</h2>
                                 </>
@@ -251,12 +258,14 @@ export default function CreateProfileMenu({ setMenu, setProfile, reloadData }) {
                     </div>
                 )}
             </div>
-            <div id="create-profile-action-bar">
-                <div></div>
-                <Button id="done-button" disabled={!ready || processing} pushable={ready && !processing} onclick={handleCreate}>
-                    Done
-                </Button>
-            </div>
+            {!showCapeMenu &&
+                <div id="create-profile-action-bar">
+                    <div></div>
+                    <Button id="done-button" disabled={!ready || processing} pushable={ready && !processing} onclick={handleCreate}>
+                        Done
+                    </Button>
+                </div>
+            }
         </>
     );
 };

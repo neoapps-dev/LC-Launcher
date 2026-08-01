@@ -114,6 +114,7 @@ export default function MainMenu({ setMenu, instance, setInstance, profile, setP
                         <div id="progress-bar">
                             <div
                                 id="progress-fill"
+                                className={progress.status === "starting" ? "indeterminate" : ""}
                                 style={{ width: `${progress.percent}%` }}
                             />
                         </div>

@@ -373,7 +373,9 @@ class Filesystem {
                             await fs.promises.writeFile(targetFilePath, fileData);
                         } else {
                             await fs.promises.writeFile(targetFilePath, fileData, { mode: fileMode });
-                            fs.chmodSync(targetFilePath, fileMode).catch(e=>{});
+                            try {
+                                fs.chmodSync(targetFilePath, fileMode);
+                            } catch (e) {};
                         };
 
                         ext.sendMessage("unzipProgress", {

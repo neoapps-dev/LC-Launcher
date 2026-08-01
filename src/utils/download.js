@@ -24,12 +24,10 @@ export default class Download {
 
     async start(savePath) {
         this.status = "starting";
+        this.progress = 0;
         this.emit();
 
         return new Promise(async (resolve, reject) => {
-            this.status = "downloading";
-            this.emit();
-
             const onProgressEvent = (event) => {
                 const packet = event.detail;
                 
@@ -53,6 +51,7 @@ export default class Download {
                     this.lastDownloadedBytes = packet.downloadedBytes;
                 };
 
+                this.status = "downloading";
                 this.emit();
             };
 

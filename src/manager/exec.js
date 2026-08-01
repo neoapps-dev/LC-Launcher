@@ -200,7 +200,7 @@ export class Exec {
 
         await this.manager.utils.ensureDir(contentDir);
 
-        console.log("Downloading build...");
+        console.log("Downloading build...", downloadUrl);
         const download = new Download(downloadUrl, { label: `Downloading instance${isUpdate ? ' update' : ''}...` });
         try {
             await download.start(zipPath);
@@ -302,7 +302,17 @@ export class Exec {
             if (NL_OS === "Darwin") repo = "Gcenx/game-porting-toolkit";
             else if (NL_OS === "Linux") repo = "GloriousEggroll/proton-ge-custom";
 
-            showToast(`Fetching latest runtime...`);
+            window.dispatchEvent(
+                new CustomEvent("installProgress", {
+                    detail: {
+                        id: crypto.randomUUID(),
+                        active: true,
+                        status: "starting",
+                        percent: 0,
+                        label: "Fetching latest runtime..."
+                    }
+                })
+            );
 
             let apiResponse = await Net.get(`https://api.github.com/repos/${repo}/releases/latest`, {
                 headers: {
@@ -329,6 +339,18 @@ export class Exec {
             const runtimeUnzip = new Unzip(archivePath, runtimeTempDir, { label: "Extracting Runtime..." });
             await runtimeUnzip.start();
 
+            window.dispatchEvent(
+                new CustomEvent("installProgress", {
+                    detail: {
+                        id: crypto.randomUUID(),
+                        active: true,
+                        status: "starting",
+                        percent: 0,
+                        label: "Cleaning up libraries..."
+                    }
+                })
+            );
+
             if (NL_OS === "Darwin") {
                 const internalRuntimeSource = `${runtimeTempDir}/Contents/Resources/wine`;
                 await Neutralino.os.execCommand(`cp -R "${internalRuntimeSource}/." "${runtimeDir}"`);
@@ -339,7 +361,17 @@ export class Exec {
             await Neutralino.filesystem.remove(archivePath).catch(()=>{});
             await Neutralino.filesystem.remove(runtimeTempDir).catch(()=>{});
 
-            showToast('Setting up C Drive...');
+            window.dispatchEvent(
+                new CustomEvent("installProgress", {
+                    detail: {
+                        id: crypto.randomUUID(),
+                        active: true,
+                        status: "starting",
+                        percent: 0,
+                        label: "Setting up C Drive..."
+                    }
+                })
+            );
             await Neutralino.filesystem.createDirectory(prefix).catch(()=>{});
 
             const wineBin = (NL_OS === "Darwin") ? "wine64" : "wine";

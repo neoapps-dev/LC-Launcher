@@ -1,0 +1,129 @@
+#cape-selection-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    width: 100%;
+    height: 100%;
+    /*padding: 24px 32px;*/
+
+    /*background: rgba(255, 255, 255, 0.059);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    border-radius: 8px;*/
+
+    color: rgba(255, 255, 255, 0.9);
+    font: 10pt 'Minecraftia', sans-serif;
+    text-shadow: 2px 2px #000A;
+    
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    overscroll-behavior: none;
+    padding-right: 15px;
+    padding-bottom: 80px;
+
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        black 3%,
+        black 70%,
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        black 3%,
+        black 70%,
+        transparent 100%
+    );
+}
+
+#cape-selection-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+#cape-selection-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+}
+
+#cape-selection-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.cape-category-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.category-title {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.85);
+    font: 12px 'Minecraftia', sans-serif;
+    text-shadow: 2px 2px #000A;
+    margin: 0;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+    padding-bottom: 4px;
+}
+
+.cape-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 15px;
+}
+
+.cape-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #ffffff20;
+    backdrop-filter: brightness(60%) blur(8px);
+    border: 2px solid #000;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.cape-card:hover {
+    border-color: #fff;
+    background: #4e4e4e20;
+}
+
+.cape-card.selected {
+    border-color: #55ff55;
+    background: rgba(85, 255, 85, 0.15);
+}
+
+.cape-preview {
+    width: 44px;
+    height: 70px;
+    object-fit: contain;
+    border-radius: 2px;
+}
+
+.none-preview,
+.custom-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #ffffff;
+}
+
+.custom-preview {
+    font-size: 24px;
+}
+
+.cape-card span {
+    font-size: 10px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90px;
+}

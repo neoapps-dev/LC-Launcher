@@ -4,6 +4,10 @@
     margin: 0;
 }
 
+#create-profile-title {
+    width: 400px;
+}
+
 #create-profile {
     width: calc(100vw - 80px);
     height: calc(100% - 83px);

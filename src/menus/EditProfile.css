@@ -4,6 +4,10 @@
     margin: 0;
 }
 
+#edit-profile-title {
+    width: 400px;
+}
+
 #edit-profile {
     width: calc(100vw - 80px);
     height: calc(100% - 83px);
@@ -24,7 +28,7 @@
 #edit-profile h2 {
     font: 14px 'Minecraftia', sans-serif;
     text-shadow: 2px 2px #000A;
-
+    
     color: #b6b6b6;
 }
 

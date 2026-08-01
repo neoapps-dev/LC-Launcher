@@ -528,7 +528,7 @@ export default function App() {
 
     return (
         <>
-            <Window title="" loaded={loaded} menu={menu} setMenu={setMenu} isPanorama={Array.isArray(instance?.background)} backgroundSrc={instance?.background}>
+            <Window title="" loaded={loaded} menu={menu} setMenu={setMenu} isPanorama={Array.isArray(instance?.background)} backgroundSrc={instance?.background} backgroundFade={settings.renderBGFade}>
                 {loaded && dropHighlight && (
                     <div id="instance-drop-area">
                         <div className="instance-drop-inner">
