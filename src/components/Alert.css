@@ -62,6 +62,26 @@
     line-height: 1.4;
     text-shadow: 2px 2px #202013CC;
     white-space: pre-wrap;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    overscroll-behavior: none;
+
+    max-height: calc(100vh - 250px);
+}
+
+.alert-body p::-webkit-scrollbar {
+    width: 8px;
+}
+
+.alert-body p::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+}
+
+.alert-body p::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .alert-actions {
