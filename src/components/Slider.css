@@ -15,7 +15,6 @@
     image-rendering: pixelated;
     border: 2px solid #000;
     outline: none;
-    cursor: pointer;
 }
 
 .mc-slider-label {

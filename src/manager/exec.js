@@ -636,7 +636,7 @@ export class Exec {
                     const newPlaytimeSessions = [
                         ...(updatedInstance.playtimeSessions || []),
                         {
-                            date: Date.now(),
+                            date: startTime,
                             duration: sessionSeconds
                         }
                     ];

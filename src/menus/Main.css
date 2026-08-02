@@ -137,6 +137,22 @@
 	flex-direction: column;
 	justify-content: center;
 	gap: 3px;
+
+	padding: 8px;
+    border-radius: 10px;
+	border: transparent 1px solid;
+    transition: border .2s ease-in-out, background .2s ease-in-out, transform .2s ease-in-out;
+}
+
+#stats:hover {
+	background: #ffffff20 !important;
+    transform: scale(1.01) !important;
+}
+
+#stats:active {
+    background: #ffffff34 !important;
+    border: #ffffff32 1px solid !important;
+    transform: scale(0.98) !important;
 }
 
 #stats h1, #stats h2 {

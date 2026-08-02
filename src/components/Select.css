@@ -24,7 +24,6 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    cursor: pointer;
 
     font: 12pt 'Minecraftia', sans-serif;
     color: white;
@@ -91,7 +90,6 @@
 .mc-select-option {
     padding: 6px 10px;
     font: 10pt 'Minecraftia', sans-serif;
-    cursor: pointer;
     color: #ccc;
     border-bottom: 1px solid #333;
 }

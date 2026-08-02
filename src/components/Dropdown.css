@@ -12,7 +12,6 @@
     border-radius: 10px;
     border: transparent 1px solid;
     transition: border .2s ease-in-out, background .2s ease-in-out, transform .2s ease-in-out;
-    cursor: pointer;
     width: 100%;
 }
 
@@ -127,7 +126,6 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    cursor: pointer;
     min-width: 0;
 }
 

@@ -7,6 +7,7 @@ import { useSettings } from "../utils/SettingsStore.jsx";
 
 import Button from "../components/Button.jsx";
 import Dropdown from "../components/Dropdown.jsx";
+import { showAlert } from "../components/Alert.jsx";
 
 import accountIcon from "../assets/icons/account.png";
 import instanceIcon from "../assets/icons/instance.png";
@@ -41,12 +42,96 @@ export default function MainMenu({ setMenu, instance, setInstance, profile, setP
         };
     };
 
-    function formatPlaytime(seconds) {
+    function formatPlaytime(seconds, compact = true) {
         const d = Math.floor(seconds / 86400);
         const h = Math.floor((seconds % 86400) / 3600);
         const m = Math.floor((seconds % 3600) / 60);
 
-        return `${d}d ${h}h ${m}m`;
+        if (!compact) return `${d}d ${h}h ${m}m`;
+
+        // compact mode
+        if (!seconds || seconds <= 0) return "0m";
+
+        const parts = [];
+        if (d > 0) parts.push(`${d}d`);
+        if (h > 0) parts.push(`${h}h`);
+        if (m > 0 || parts.length === 0) parts.push(`${m}m`);
+
+        return parts.join(" ");
+    };
+
+    function getPlaytime(sessions = [], totalPlaytime = 0) {
+        const now = new Date();
+
+        const dayOfWeek = now.getDay();
+        const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+        const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysToMonday).getTime();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+        let todaySeconds = 0;
+        let weekSeconds = 0;
+        const dailyTotals = {};
+
+        sessions.forEach(session => {
+            const sessionDate = new Date(session.date);
+            const sessionTime = session.date;
+            const duration = session.duration || 0;
+
+            if (sessionTime >= startOfToday) todaySeconds += duration;
+            if (sessionTime >= startOfWeek) weekSeconds += duration;
+
+            const dateKey = `${sessionDate.getFullYear()}-${String(sessionDate.getMonth() + 1).padStart(2, '0')}-${String(sessionDate.getDate()).padStart(2, '0')}`;
+            dailyTotals[dateKey] = (dailyTotals[dateKey] || 0) + duration;
+        });
+
+        const getRelativeLabel = (dateObj, skipToday = false) => {
+            const targetReset = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+            const todayReset = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const diffDays = Math.round((todayReset - targetReset) / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) return skipToday ? null : "Today";
+            if (diffDays === 1) return "Yesterday";
+            if (targetReset.getTime() < startOfWeek) return dateObj.toLocaleDateString();
+
+            return dateObj.toLocaleDateString(undefined, { weekday: 'long' });
+        };
+
+        const dailyBreakdown = Object.entries(dailyTotals)
+            .reverse()
+            .map(([dateKey, duration]) => {
+                const [year, month, day] = dateKey.split("-").map(Number);
+                const dateObj = new Date(year, month - 1, day);
+                const label = getRelativeLabel(dateObj, true);
+                if (!label) return null;
+                return `  ${label} - ${formatPlaytime(duration)}`;
+            })
+            .filter(Boolean)
+            .slice(0, 5)
+            .join("\n");
+
+        const recentSessions = [...sessions]
+            .sort((a, b) => b.date - a.date)
+            .slice(0, 5)
+            .map(s => {
+                const dateObj = new Date(s.date);
+                const dayLabel = getRelativeLabel(dateObj, false);
+                const timeLabel = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return `  ${dayLabel} at ${timeLabel} - ${formatPlaytime(s.duration)}`;
+            })
+            .join("\n");
+
+        return [
+            `  Total - ${formatPlaytime(totalPlaytime)}`,
+            `  This Week - ${formatPlaytime(weekSeconds)}`,
+            `  Today - ${formatPlaytime(todaySeconds)}`,
+            ``,
+            `--------- DAILY BREAKDOWN ---------`,
+            dailyBreakdown || "  No past daily activity",
+            ``,
+            `--------- RECENT SESSIONS ---------`,
+            recentSessions || "  No recent sessions"
+        ].join("\n");
     };
 
     return (
@@ -172,9 +257,23 @@ export default function MainMenu({ setMenu, instance, setInstance, profile, setP
                             <img src={serversIcon} draggable={false} />
                         </Button>
                     </div>
-                    <div id="stats">
+                    <div id="stats" onclick={() => {
+                        if (!instance?.id) return;
+
+                        const breakdownText = getPlaytime(
+                            instance?.playtimeSessions || [],
+                            instance?.playtime || 0
+                        );
+
+                        showAlert(
+                            `${instance?.name} Playtime`,
+                            breakdownText,
+                            `OK`,
+                            "LEFT"
+                        );
+                    }}>
                         <h1>Playtime</h1>
-                        <h2>{typeof instance?.playtime === 'number' ? formatPlaytime(instance?.playtime) : "N/A"}</h2>
+                        <h2>{typeof instance?.playtime === 'number' ? formatPlaytime(instance?.playtime, false) : "N/A"}</h2>
                     </div>
                 </div>
             </div>

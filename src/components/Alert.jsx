@@ -5,9 +5,9 @@ import Button from "./Button.jsx";
 
 let pushAlert;
 
-export function showAlert(title, message, type = "CANCEL_OK") {
+export function showAlert(title, message, type = "CANCEL_OK", align = "CENTER") {
     if (!pushAlert) return Promise.resolve("NO");
-    return new Promise((resolve) => pushAlert({ title, message, type, resolve }));
+    return new Promise((resolve) => pushAlert({ title, message, type, align, resolve }));
 };
 
 export default function Alert() {
@@ -66,8 +66,15 @@ export default function Alert() {
                 onClick={(e) => e.stopPropagation()}
             >
                 <h2 class="alert-title">{current.title}</h2>
-                <div class="alert-body">
-                    <p>{current.message}</p>
+                <div class="alert-body" style={{ textAlign: current?.align?.toLowerCase() || "center" }}>
+                    <p>
+                        {current.message.split("\n").map((line, index, array) => (
+                            <>
+                                {line}
+                                {index < array.length - 1 && <br />}
+                            </>
+                        ))}
+                    </p>
                 </div>
                 <div class="alert-actions">
                     {current.type === "YES_NO" &&

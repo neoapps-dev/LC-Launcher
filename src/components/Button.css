@@ -4,7 +4,6 @@
 	min-height: var(--btn-size);
 	height: var(--btn-size);
 	width: calc(var(--btn-size) * 10);
-	cursor: pointer;
 	overflow: hidden;
 	white-space: nowrap;
 	user-select: none;

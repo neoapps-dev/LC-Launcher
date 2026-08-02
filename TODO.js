@@ -1,7 +1,7 @@
 //- TODO add controller mode which is like steam big screen mode
 //- TODO make instances appear as games in steam
 //* TODO add dev tools like .arc .pak and .loc editor
-//* TODO make each profile have multiple skins
+//* TODO make each profile have multiple skins and capes
 //* TODO add friend, chat and join game system (maybe compatible with emerald launcher) (use that rounded gray breathing colour boxes as placeholders) (have a rlly cool eligant login animation)
 //* TODO add LCE Workshop and make a good website for it
 // TODO make worlds menu work
@@ -14,7 +14,6 @@
 // TODO add a way to view achivements inside the launcher
 
 // NEEDED BEFORE RELEASE
-//+ TODO add more detailed playtime so when u click on it in bottom corner it opens up and shows usage sessions, eg. 50 mins here 20 mins there.
 //+ TODO fix the auto update to update libs also
 
 // DONE BELOW
@@ -34,3 +33,4 @@
 //+ TODO fixed runtime extract failure
 //+ TODO the runtime install no longer uses toasts, and now uses all progress labels
 //+ TODO added intermetiate progress style
+//+ TODO add more detailed playtime so when u click on it in bottom corner it opens up and shows usage sessions, eg. 50 mins here 20 mins there.
