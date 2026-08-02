@@ -12,9 +12,7 @@
 // TODO add world backups online, dont add until 20th march cause neo will kill u.
 // TODO add a extension system to the launcher itself so u can add stuff.
 // TODO add a way to view achivements inside the launcher
-
-// NEEDED BEFORE RELEASE
-//+ TODO fix the auto update to update libs also
+// TODO make a full auto update where it downloads inside the launcher, checksum and then launches, quits current (do check on load progress bar and then use that progress bar as download progress)
 
 // DONE BELOW
 //+ TODO bundle zenity and fix local library paths
@@ -34,3 +32,4 @@
 //+ TODO the runtime install no longer uses toasts, and now uses all progress labels
 //+ TODO added intermetiate progress style
 //+ TODO add more detailed playtime so when u click on it in bottom corner it opens up and shows usage sessions, eg. 50 mins here 20 mins there.
+//+ TODO added a notify on new update

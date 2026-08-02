@@ -1,8 +1,22 @@
 ### Additions
-- Added a loading progress bar on open.
+- Added a cape menu with custom and preset options.
+- Added detailed playtime tracking with recent session history.
+- Added update alert when a new version is available.
+- Added options to toggle background panoramas and background fading at the top & bottom.
+- Added file picker buttons for instance assets.
+- Added support for ARM64 devices.
+- Added an official Linux installer & uninstaller script.
 
 ### Changes
-- Changed loading to use promises.
+- Custom alerts to fit the launcher's theme.
+- Updated skins to load as DLC instead of replacing the steve skin.
+- Improved app speed when launching, stopping an instance, or exiting the launcher.
+- Updated the runtime installation screen with clear progress labels.
 
 ### Bug Fixes
-- Fixed some smaller bugs too.
+- Fixed Java and Bedrock skin fetching.
+- Fixed background processes remaining open after exiting the launcher.
+- Fixed runtime extraction failures during setup.
+- Fixed Discord Rich Presence skin icon.
+- Fixed "Waiting for extension..." issue.
+- ...and a bunch more small ones!
