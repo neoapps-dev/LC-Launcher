@@ -144,7 +144,7 @@ See `LICENSE` for full terms.
 <h2>Credits</h2>
 
 - TheHuckle
-- Emerald Launcher for Slim Skins and Capes
+- Emerald Launcher - Logic to pack slim skins & capes into a DLC
 - LC Launcher contributors
 
 <p align="right"><a href="#readme-top">(Back To Top)</a></p>
