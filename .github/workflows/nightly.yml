@@ -73,16 +73,7 @@ jobs:
                   !dist/__*
 
     build-appimage:
-        strategy:
-            matrix:
-                include:
-                    - os: ubuntu-latest
-                      target: linux
-                      bun-arch: x64
-                    - os: ubuntu-24.04-arm
-                      target: linux-arm64
-                      bun-arch: aarch64
-        runs-on: ${{ matrix.os }}
+        runs-on: ubuntu-latest
         container:
             image: archlinux:latest
         steps:
@@ -98,8 +89,8 @@ jobs:
                 path: |
                   node_modules
                   /var/cache/pacman/pkg
-                key: arch-${{ matrix.target }}-${{ hashFiles('package.json') }}
-                restore-keys: arch-${{ matrix.target }}-
+                key: arch-linux-${{ hashFiles('package.json') }}
+                restore-keys: arch-linux-
 
             - name: Install build dependencies
               run: |
@@ -112,27 +103,27 @@ jobs:
 
             - name: Install bun
               run: |
-                wget -qO /tmp/bun.zip "https://github.com/oven-sh/bun/releases/latest/download/bun-linux-${{ matrix.bun-arch }}.zip"
+                wget -qO /tmp/bun.zip "https://github.com/oven-sh/bun/releases/latest/download/bun-linux-x64.zip"
                 unzip -qo /tmp/bun.zip -d /tmp/bun
                 mv /tmp/bun/bun /usr/local/bin/bun
                 bun --version
 
             - name: Build lib
-              run: bun ./build-scripts/build-lib.js ${{ matrix.target }}
+              run: bun ./build-scripts/build-lib.js linux
 
             - name: Build app
-              run: node ./build-scripts/build.js ${{ matrix.target }}
+              run: node ./build-scripts/build.js linux
 
             - name: Build AppImage
               run: |
                 chmod +x ./build-scripts/appimage.sh
-                ./build-scripts/appimage.sh ${{ matrix.target }}
+                ./build-scripts/appimage.sh linux
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
             - uses: actions/upload-artifact@v4
               with:
-                name: appimage-${{ matrix.target }}
+                name: appimage-linux
                 path: dist/appimage/*.AppImage*
                 if-no-files-found: error
 
