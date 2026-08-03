@@ -73,14 +73,32 @@ export WEBKIT_DISABLE_DMABUF_RENDERER=1
 if [ "\$XDG_SESSION_TYPE" = "wayland" ]; then
 export GDK_BACKEND=x11
 fi
+#neo: source the hooks so hardcoded paths patched to /tmp/<randomshit> by quick-sharun get symlinked back into the AppImage (webkit spawns its helper processes by absolute path, so the symlink is required for them to resolve)
+if [ -f "\$APPDIR/AppRun.lib" ]; then
+. "\$APPDIR/AppRun.lib"
+for hook in "\$APPDIR"/bin/*.hook; do
+    [ -e "\$hook" ] || continue
+    . "\$hook"
+done
+fi
 exec "\$APPDIR/bin/$APP_NAME" "\$@"
 EOF
 chmod +x AppDir/AppRun.sh
-# make sure the strace probe for dlopened libs uses the same webkit env
+#neo: make sure the strace probe for dlopened libs uses the same webkit env
 export WEBKIT_DISABLE_DMABUF_RENDERER=1
 ./quick-sharun /usr/bin/$APP_NAME
+#neo: webkit spawns its helper processes by an absolute path inside lib/webkit2gtk-4.1
+#neo: quick-sharun maps it to /tmp/<randomshit> -> AppDir/lib via the path-mapping hook but treats the helpers as binaries and wraps them elsewhere, so copy them into the webkit dir where the hook expects them
+if [ -d /usr/lib/webkit2gtk-4.1 ]; then
+    mkdir -p AppDir/lib/webkit2gtk-4.1
+    for h in WebKitWebProcess WebKitNetworkProcess WebKitGPUProcess; do
+        if [ -f "/usr/lib/webkit2gtk-4.1/$h" ]; then
+            cp -v "/usr/lib/webkit2gtk-4.1/$h" "AppDir/lib/webkit2gtk-4.1/$h"
+        fi
+    done
+fi
 ./quick-sharun --make-appimage
 mkdir -p ./dist/appimage
 mv -v ./*.AppImage "./dist/appimage/$APP_NAME-linux-${NEU_ARCH}.AppImage"
-mv -v ./*.AppImage.zsync ./dist/appimage/ 2>/dev/null || :
+mv -v ./*.AppImage.zsync "./dist/appimage/$APP_NAME-linux-${NEU_ARCH}.AppImage.zsync" 2>/dev/null || :
 echo "All Done!"
