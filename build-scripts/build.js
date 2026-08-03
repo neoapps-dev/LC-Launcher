@@ -339,7 +339,7 @@ console.log(`Building for ${targetArg ? targetArg : 'all platforms'}...`);
 const cfg = loadConfig();
 ensureDependencies();
 
-const shouldBuild = (platform) => !targetArg || platform.includes(targetArg);
+const shouldBuild = (platform) => !targetArg || platform === targetArg;
 
 function buildApp(portable) {
     try {
