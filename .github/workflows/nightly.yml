@@ -105,7 +105,7 @@ jobs:
               run: |
                 wget -qO /tmp/bun.zip "https://github.com/oven-sh/bun/releases/latest/download/bun-linux-x64.zip"
                 unzip -qo /tmp/bun.zip -d /tmp/bun
-                mv /tmp/bun/bun /usr/local/bin/bun
+                mv /tmp/bun/bun-linux-x64/bun /usr/local/bin/bun
                 bun --version
 
             - name: Build lib
