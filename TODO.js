@@ -13,23 +13,3 @@
 // TODO add a extension system to the launcher itself so u can add stuff.
 // TODO add a way to view achivements inside the launcher
 // TODO make a full auto update where it downloads inside the launcher, checksum and then launches, quits current (do check on load progress bar and then use that progress bar as download progress)
-
-// DONE BELOW
-//+ TODO bundle zenity and fix local library paths
-//+ TODO add option to toggle panoramas and fade top and bottom of bg
-//+ TODO fix the java and bedrock skin fetch as the api went down
-//+ TODO add file icon next to the icon and background textbox for instances which gets the file and turns it into data uri
-//+ TODO make all the popups browser based to reduce need on zenity (also fits in theme more)
-//+ TODO fix the issue where the lcLib is left running in the background
-//+ TODO make the profile skin be placed as a DLC rather than replacing steve
-//+ TODO fix waiting for extension issue
-//+ TODO Finish the install.sh for linux
-//+ TODO added arm64 version
-//+ TODO fix discord rpc skin icon
-//+ TODO Make the amount of time spent when exiting, stopping, launching all less by optimising the write stream for only diff
-//+ TODO add cape menu (capes btn on edit/create skin which opens another menu with grid of cape presets and an extra one with upload icon)
-//+ TODO fixed runtime extract failure
-//+ TODO the runtime install no longer uses toasts, and now uses all progress labels
-//+ TODO added intermetiate progress style
-//+ TODO add more detailed playtime so when u click on it in bottom corner it opens up and shows usage sessions, eg. 50 mins here 20 mins there.
-//+ TODO added a notify on new update
