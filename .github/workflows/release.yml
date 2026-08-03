@@ -53,29 +53,13 @@ jobs:
               if: matrix.os == 'ubuntu-latest'
               run: |
                 sudo apt-get update
-                sudo apt-get install -y zenity libfuse2 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-gl libwebkit2gtk-4.1 libwebkit2gtk-4.1-dev libsoup2.4-1
+                sudo apt-get install -y zenity
 
-                wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage -O linuxdeploy
-                chmod +x linuxdeploy
-                sudo mv linuxdeploy /usr/local/bin/
-
-                wget https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gstreamer/master/linuxdeploy-plugin-gstreamer.sh -O linuxdeploy-plugin-gstreamer.sh
-                chmod +x linuxdeploy-plugin-gstreamer.sh
-                sudo mv linuxdeploy-plugin-gstreamer.sh /usr/local/bin/
-            
             - name: Install installer deps (Linux ARM64)
               if: matrix.target == 'linux-arm64'
               run: |
                 sudo apt-get update
-                sudo apt-get install -y zenity libfuse2 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-gl libwebkit2gtk-4.1-dev libwebkit2gtk-4.1 libsoup2.4-1
-
-                wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-aarch64.AppImage -O linuxdeploy
-                chmod +x linuxdeploy
-                sudo mv linuxdeploy /usr/local/bin/
-
-                wget https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gstreamer/master/linuxdeploy-plugin-gstreamer.sh -O linuxdeploy-plugin-gstreamer.sh
-                chmod +x linuxdeploy-plugin-gstreamer.sh
-                sudo mv linuxdeploy-plugin-gstreamer.sh /usr/local/bin/
+                sudo apt-get install -y zenity
 
             - name: Build lib
               run: bun ./build-scripts/build-lib.js ${{ matrix.target }}
@@ -91,8 +75,72 @@ jobs:
                   dist/
                   !dist/__*
 
+    build-appimage:
+        strategy:
+            matrix:
+                include:
+                    - os: ubuntu-latest
+                      target: linux
+                      bun-arch: x64
+                    - os: ubuntu-24.04-arm
+                      target: linux-arm64
+                      bun-arch: aarch64
+        runs-on: ${{ matrix.os }}
+        container:
+            image: archlinux:latest
+        steps:
+            - name: Bootstrap keyring and git
+              run: |
+                pacman -Syu --noconfirm archlinux-keyring
+                pacman -S --noconfirm --needed git
+
+            - uses: actions/checkout@v4
+
+            - uses: actions/cache@v4
+              with:
+                path: |
+                  node_modules
+                  /var/cache/pacman/pkg
+                key: arch-${{ matrix.target }}-${{ hashFiles('package.json') }}
+                restore-keys: arch-${{ matrix.target }}-
+
+            - name: Install build dependencies
+              run: |
+                pacman -S --noconfirm --needed \
+                  base-devel wget curl unzip zsync patchelf strace \
+                  nodejs npm \
+                  xorg-server-xvfb dbus \
+                  gtk3 glib-networking librsvg bubblewrap \
+                  webkit2gtk-4.1 gst-plugins-base gst-plugins-good
+
+            - name: Install bun
+              run: |
+                wget -qO /tmp/bun.zip "https://github.com/oven-sh/bun/releases/latest/download/bun-linux-${{ matrix.bun-arch }}.zip"
+                unzip -qo /tmp/bun.zip -d /tmp/bun
+                mv /tmp/bun/bun /usr/local/bin/bun
+                bun --version
+
+            - name: Build lib
+              run: bun ./build-scripts/build-lib.js ${{ matrix.target }}
+
+            - name: Build app
+              run: node ./build-scripts/build.js ${{ matrix.target }}
+
+            - name: Build AppImage
+              run: |
+                chmod +x ./build-scripts/appimage.sh
+                ./build-scripts/appimage.sh ${{ matrix.target }}
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - uses: actions/upload-artifact@v4
+              with:
+                name: appimage-${{ matrix.target }}
+                path: dist/appimage/*.AppImage*
+                if-no-files-found: error
+
     publish:
-        needs: build
+        needs: [build, build-appimage]
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code

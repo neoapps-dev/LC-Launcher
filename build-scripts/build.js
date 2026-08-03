@@ -190,21 +190,6 @@ Keywords=game;launcher;legacy;community;`;
     const envPrefix = process.platform === 'darwin' ? 'export COPYFILE_DISABLE=1 && ' : '';
     run(`${envPrefix}tar --exclude="._*" --exclude=".DS_Store" --exclude="__MACOSX" -cJf "${tarName}" -C ./dist/linux_${arch}${!!portable ? "_portable" : ""} "${safeAppName}"`);
 
-    if (process.platform === "linux" && process.argv.length > 2) {
-        console.log(`Creating AppImage for ${arch}...`);
-        const targetArch = arch === 'arm64' ? 'aarch64' : arch;
-        const targetLibDir = arch === 'arm64' ? '/usr/lib/aarch64-linux-gnu' : '/usr/lib/x86_64-linux-gnu';
-
-        const hasLinuxDeploy = !!execSync("which linuxdeploy 2>/dev/null || true").toString().trim();
-        if (hasLinuxDeploy) {
-            const envVars = `ARCH=${targetArch} LD_LIBRARY_PATH="${targetLibDir}:$LD_LIBRARY_PATH" LINUXDEPLOY_PLUGINS="gstreamer"`;
-            run(`${envVars} linuxdeploy --appdir="${outDir}" --executable="${outDir}/usr/bin/${safeAppName}" --output appimage`);
-            run(`mv ./*.AppImage "./dist/${safeAppName}${!!portable ? "-portable" : ""}-linux-${arch}.AppImage" 2>/dev/null || true`);
-        } else {
-            run(`ARCH=${targetArch} appimagetool "${outDir}" "./dist/${safeAppName}${!!portable ? "-portable" : ""}-linux-${arch}.AppImage"`);
-        };
-    };
-
     console.log(`Created ${tarName}`);
 };
 
